@@ -282,6 +282,7 @@ const BlackoutModal: React.FC<{
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        onSave(formData);
     };
 
     return (
