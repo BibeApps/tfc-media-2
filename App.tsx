@@ -94,7 +94,17 @@ function App() {
                         <Route path="forgot-password" element={<ForgotPassword />} />
                         <Route path="reset-password" element={<ResetPassword />} />
 
-                        {/* Admin Routes - Protected with Layout */}
+                        {/* Admin Dashboard - No Sidebar */}
+                        <Route
+                          path="admin"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin']}>
+                              <AdminHome />
+                            </ProtectedRoute>
+                          }
+                        />
+
+                        {/* Admin Pages - With Sidebar Layout */}
                         <Route
                           path="admin"
                           element={
@@ -103,7 +113,6 @@ function App() {
                             </ProtectedRoute>
                           }
                         >
-                          <Route index element={<AdminHome />} />
                           <Route path="gallery" element={<GalleryManager />} />
                           <Route path="bookings" element={<Bookings />} />
                           <Route path="sessions" element={<Sessions />} />
