@@ -275,14 +275,13 @@ const BlackoutModal: React.FC<{
     const [formData, setFormData] = useState({
         date: '',
         isFullDay: true,
-        startTime: '',
-        endTime: '',
+        startTime: '12:00 PM',
+        endTime: '01:00 PM',
         reason: '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(formData);
     };
 
     return (
@@ -331,30 +330,103 @@ const BlackoutModal: React.FC<{
                     </div>
 
                     {!formData.isFullDay && (
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-4">
+                            {/* Start Time */}
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     Start Time
                                 </label>
-                                <input
-                                    type="time"
-                                    required={!formData.isFullDay}
-                                    value={formData.startTime}
-                                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
-                                />
+                                <div className="grid grid-cols-3 gap-2">
+                                    <select
+                                        value={formData.startTime.split(':')[0] || '12'}
+                                        onChange={(e) => {
+                                            const hour = e.target.value;
+                                            const minute = formData.startTime.split(':')[1]?.substring(0, 2) || '00';
+                                            const period = formData.startTime.includes('PM') ? 'PM' : 'AM';
+                                            setFormData({ ...formData, startTime: `${hour}:${minute} ${period}` });
+                                        }}
+                                        className="px-3 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                    >
+                                        {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                                            <option key={h} value={h.toString().padStart(2, '0')}>{h}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        value={formData.startTime.split(':')[1]?.substring(0, 2) || '00'}
+                                        onChange={(e) => {
+                                            const hour = formData.startTime.split(':')[0] || '12';
+                                            const minute = e.target.value;
+                                            const period = formData.startTime.includes('PM') ? 'PM' : 'AM';
+                                            setFormData({ ...formData, startTime: `${hour}:${minute} ${period}` });
+                                        }}
+                                        className="px-3 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                    >
+                                        {Array.from({ length: 60 }, (_, i) => i).map(m => (
+                                            <option key={m} value={m.toString().padStart(2, '0')}>{m.toString().padStart(2, '0')}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        value={formData.startTime.includes('PM') ? 'PM' : 'AM'}
+                                        onChange={(e) => {
+                                            const hour = formData.startTime.split(':')[0] || '12';
+                                            const minute = formData.startTime.split(':')[1]?.substring(0, 2) || '00';
+                                            setFormData({ ...formData, startTime: `${hour}:${minute} ${e.target.value}` });
+                                        }}
+                                        className="px-3 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                    >
+                                        <option value="AM">AM</option>
+                                        <option value="PM">PM</option>
+                                    </select>
+                                </div>
                             </div>
+
+                            {/* End Time */}
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     End Time
                                 </label>
-                                <input
-                                    type="time"
-                                    required={!formData.isFullDay}
-                                    value={formData.endTime}
-                                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
-                                />
+                                <div className="grid grid-cols-3 gap-2">
+                                    <select
+                                        value={formData.endTime.split(':')[0] || '01'}
+                                        onChange={(e) => {
+                                            const hour = e.target.value;
+                                            const minute = formData.endTime.split(':')[1]?.substring(0, 2) || '00';
+                                            const period = formData.endTime.includes('PM') ? 'PM' : 'AM';
+                                            setFormData({ ...formData, endTime: `${hour}:${minute} ${period}` });
+                                        }}
+                                        className="px-3 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                    >
+                                        {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
+                                            <option key={h} value={h.toString().padStart(2, '0')}>{h}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        value={formData.endTime.split(':')[1]?.substring(0, 2) || '00'}
+                                        onChange={(e) => {
+                                            const hour = formData.endTime.split(':')[0] || '01';
+                                            const minute = e.target.value;
+                                            const period = formData.endTime.includes('PM') ? 'PM' : 'AM';
+                                            setFormData({ ...formData, endTime: `${hour}:${minute} ${period}` });
+                                        }}
+                                        className="px-3 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                    >
+                                        {Array.from({ length: 60 }, (_, i) => i).map(m => (
+                                            <option key={m} value={m.toString().padStart(2, '0')}>{m.toString().padStart(2, '0')}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        value={formData.endTime.includes('PM') ? 'PM' : 'AM'}
+                                        onChange={(e) => {
+                                            const hour = formData.endTime.split(':')[0] || '01';
+                                            const minute = formData.endTime.split(':')[1]?.substring(0, 2) || '00';
+                                            setFormData({ ...formData, endTime: `${hour}:${minute} ${e.target.value}` });
+                                        }}
+                                        className="px-3 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                    >
+                                        <option value="AM">AM</option>
+                                        <option value="PM">PM</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     )}
