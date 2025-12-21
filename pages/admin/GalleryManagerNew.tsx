@@ -315,13 +315,16 @@ const GalleryManagerNew: React.FC = () => {
                     .insert({
                         name: newEventName,
                         event_id: selectedSubCategory.id,
-                        event_date: newEventDate || null,
+                        date: newEventDate || null,
                         thumbnail: eventPreview || null
                     })
                     .select()
                     .single();
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Supabase error:', error);
+                    throw error;
+                }
 
                 setSelectedEvent(data);
                 await fetchEvents(selectedSubCategory.id);
@@ -333,11 +336,14 @@ const GalleryManagerNew: React.FC = () => {
                     .from('sessions')
                     .update({
                         thumbnail: eventPreview,
-                        event_date: newEventDate || selectedEvent.date // Assuming 'date' is the field for event_date in selectedEvent
+                        date: newEventDate || selectedEvent.date
                     })
                     .eq('id', selectedEvent.id);
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Supabase error:', error);
+                    throw error;
+                }
 
                 await fetchEvents(selectedSubCategory.id);
                 alert('Event updated successfully!');
@@ -346,7 +352,7 @@ const GalleryManagerNew: React.FC = () => {
             setEventConfirmed(true);
         } catch (error) {
             console.error('Error saving event:', error);
-            alert('Failed to save event. Please try again.');
+            alert(`Failed to save event. Please try again. Error: ${error.message || 'Unknown error'}`);
         }
     };
 
