@@ -30,6 +30,7 @@ import Sessions from './pages/admin/Sessions';
 import GalleryUpload from './pages/admin/GalleryUpload';
 import Orders from './pages/admin/Orders';
 import BlackoutDates from './pages/admin/BlackoutDates';
+import ServiceTypes from './pages/admin/ServiceTypes';
 import AdminHome from './pages/admin/AdminHome';
 import GalleryManagerNew from './pages/admin/GalleryManagerNew';
 import GalleryEdit from './pages/admin/GalleryEdit';
@@ -125,6 +126,7 @@ function App() {
                           <Route path="gallery-upload" element={<GalleryUpload />} />
                           <Route path="orders" element={<Orders />} />
                           <Route path="blackout-dates" element={<BlackoutDates />} />
+              <Route path="service-types" element={<ServiceTypes />} />
                           <Route path="clients" element={<Clients />} />
                           <Route path="team" element={<Team />} />
                           <Route path="portfolio" element={<PortfolioAdmin />} />

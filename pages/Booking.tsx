@@ -7,6 +7,8 @@ import { supabase } from '../supabaseClient';
 import { motion } from 'framer-motion';
 import AvailabilityCalendar from '../components/AvailabilityCalendar';
 import { generateTimeSlots, calculateDuration } from '../utils/timeUtils';
+import { formatPhoneNumber } from '../utils/phoneFormatter';
+import { sendBookingConfirmation } from '../utils/notifications';
 
 interface BlackoutDate {
   id: string;
@@ -26,6 +28,7 @@ interface Booking {
 const Booking: React.FC = () => {
   const { addBooking, isSlotAvailable, getBlackoutForDate } = useBooking();
   const [step, setStep] = useState(1);
+  const [serviceTypes, setServiceTypes] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -108,7 +111,7 @@ const Booking: React.FC = () => {
   };
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.isFullDay && (!formData.time || !formData.endTime)) {
       alert('Please select both start and end time for your booking.');
@@ -125,6 +128,21 @@ const Booking: React.FC = () => {
       phone: formData.phone,
       notes: formData.notes
     });
+
+    // Send booking confirmation email
+    try {
+      const timeDisplay = formData.isFullDay 
+        ? 'Full Day' 
+        : `${formData.time} - ${formData.endTime}`;
+      await sendBookingConfirmation(
+        formData.email,
+        `${formData.date} (${timeDisplay})`,
+        formData.type
+      );
+    } catch (emailError) {
+      console.error('Failed to send confirmation email:', emailError);
+      // Don't block booking if email fails
+    }
 
     setStep(3); // Success
   };

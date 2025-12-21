@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatPhoneNumber } from '../../utils/phoneFormatter';
 import { Search, Plus, X, Mail, Phone, Building, DollarSign, ShoppingBag, Calendar, Edit, Trash2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
@@ -322,7 +323,7 @@ const Clients: React.FC = () => {
                                         <input
                                             type="tel"
                                             value={formData.phone || ''}
-                                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                            onChange={(e) => setFormData({ ...formData, phone: formatPhoneNumber(e.target.value) })}
                                             className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
                                         />
                                     </div>

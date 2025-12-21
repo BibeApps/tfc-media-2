@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { formatPhoneNumber } from '../../utils/phoneFormatter';
 import { User, Bell, Shield, CreditCard, Lock, HelpCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -111,7 +112,7 @@ const Settings: React.FC = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
-                            <input type="tel" value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-2.5 text-gray-900 dark:text-white" />
+                            <input type="tel" value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: formatPhoneNumber(e.target.value)})} className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-2.5 text-gray-900 dark:text-white" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>

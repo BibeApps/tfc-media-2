@@ -1,10 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
+import { formatPhoneNumber } from '../utils/phoneFormatter';
 import { useGallery } from '../context/GalleryContext';
 import { useTheme } from '../context/ThemeContext';
 import { useProjects } from '../context/ProjectContext';
 import { useClients } from '../context/ClientContext';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { useBooking } from '../context/BookingContext';
 import { UploadItem, PricingConfig, GalleryItem, PortalProject, ProjectStatus, ClientUser, BlackoutDate } from '../types';
 import { analyzeMediaWithAI, createWatermarkedImage, createVideoThumbnail } from '../utils/mediaUtils';
@@ -37,6 +39,8 @@ const StepIndicator: React.FC<{ currentStep: number }> = ({ currentStep }) => (
 
 // --- Dashboard Component ---
 const DashboardHome = () => {
+  const navigate = useNavigate();
+  
   const data = [
     { name: 'Jan', revenue: 4000 },
     { name: 'Feb', revenue: 3000 },
@@ -44,6 +48,21 @@ const DashboardHome = () => {
     { name: 'Apr', revenue: 2780 },
     { name: 'May', revenue: 1890 },
     { name: 'Jun', revenue: 2390 },
+  ];
+
+  const quickActions = [
+    { name: 'Gallery Manager', path: '/admin/gallery', icon: ImageIcon, color: 'from-purple-500 to-purple-600' },
+    { name: 'Gallery Editor', path: '/admin/gallery-edit', icon: Edit, color: 'from-pink-500 to-pink-600' },
+    { name: 'Bookings', path: '/admin/bookings', icon: CalendarIcon, color: 'from-blue-500 to-blue-600' },
+    { name: 'Orders', path: '/admin/orders', icon: ShoppingBag, color: 'from-green-500 to-green-600' },
+    { name: 'Blackout Dates', path: '/admin/blackout-dates', icon: Ban, color: 'from-red-500 to-red-600' },
+    { name: 'Service Types', path: '/admin/service-types', icon: Briefcase, color: 'from-cyan-500 to-cyan-600' },
+    { name: 'Clients', path: '/admin/clients', icon: Users, color: 'from-indigo-500 to-indigo-600' },
+    { name: 'Projects', path: '/admin/projects', icon: Briefcase, color: 'from-orange-500 to-orange-600' },
+    { name: 'Portfolio', path: '/admin/portfolio', icon: ImageIcon, color: 'from-yellow-500 to-yellow-600' },
+    { name: 'Team', path: '/admin/team', icon: Shield, color: 'from-teal-500 to-teal-600' },
+    { name: 'Notifications', path: '/admin/notifications', icon: Mail, color: 'from-violet-500 to-violet-600' },
+    { name: 'Settings', path: '/admin/settings', icon: Settings, color: 'from-gray-500 to-gray-600' },
   ];
 
   return (
@@ -80,6 +99,27 @@ const DashboardHome = () => {
              </div>
              <p className="text-3xl font-bold font-heading text-gray-900 dark:text-white">1,204</p>
              <span className="text-purple-500 text-sm font-medium">+5% from last month</span>
+          </div>
+       </div>
+
+       {/* Quick Actions */}
+       <div className="space-y-4">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Quick Actions</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {quickActions.map((action) => (
+              <motion.button
+                key={action.path}
+                onClick={() => navigate(action.path)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-white dark:bg-charcoal p-6 rounded-xl border border-gray-200 dark:border-white/10 hover:shadow-lg transition-all group"
+              >
+                <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${action.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <action.icon className="w-6 h-6 text-white" />
+                </div>
+                <h4 className="font-bold text-gray-900 dark:text-white text-left">{action.name}</h4>
+              </motion.button>
+            ))}
           </div>
        </div>
 
@@ -651,7 +691,7 @@ const ClientManager = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Phone</label>
-                      <input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-3 text-gray-900 dark:text-white" />
+                      <input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: formatPhoneNumber(e.target.value)})} className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-3 text-gray-900 dark:text-white" />
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Status</label>
@@ -726,7 +766,7 @@ const ClientManager = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Phone</label>
-                      <input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-3 text-gray-900 dark:text-white" />
+                      <input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: formatPhoneNumber(e.target.value)})} className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-3 text-gray-900 dark:text-white" />
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Status</label>
@@ -1559,7 +1599,7 @@ const SettingsPanel = () => {
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
                         <div className="relative">
                             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input type="tel" value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: e.target.value})} className="w-full pl-10 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-electric outline-none transition-all" />
+                            <input type="tel" value={profileForm.phone} onChange={e => setProfileForm({...profileForm, phone: formatPhoneNumber(e.target.value)})} className="w-full pl-10 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-electric outline-none transition-all" />
                         </div>
                     </div>
                     <div className="md:col-span-2">
