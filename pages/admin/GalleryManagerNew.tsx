@@ -235,21 +235,24 @@ const GalleryManagerNew: React.FC = () => {
                 ctx.fill();
             }
 
-            // Add dark overlay for text readability
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-            ctx.fillRect(0, 600, 1200, 200);
+            // Add dark overlay for text readability (centered)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 300, 1200, 200);
 
-            // Add main text (name)
+            // Add main text (name) - centered in middle
             ctx.fillStyle = 'white';
-            ctx.font = 'bold 72px Arial';
+            ctx.font = 'bold 80px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(name, 600, 700);
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = 10;
+            ctx.fillText(name.toUpperCase(), 600, 380);
 
             // Add subtitle (type)
-            ctx.font = '32px Arial';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.fillText(type.charAt(0).toUpperCase() + type.slice(1), 600, 760);
+            ctx.font = '36px Arial';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.shadowBlur = 5;
+            ctx.fillText(type.charAt(0).toUpperCase() + type.slice(1), 600, 450);
 
             // Convert to blob
             const blob = await new Promise<Blob>((resolve, reject) => {
