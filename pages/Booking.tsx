@@ -22,6 +22,7 @@ interface BlackoutDate {
 interface Booking {
   booking_date: string;
   booking_time: string;
+  end_time?: string;
   status: string;
 }
 
@@ -80,11 +81,11 @@ const Booking: React.FC = () => {
         setBlackoutDates(mappedBlackouts);
       }
 
-      // Fetch confirmed bookings
+      // Fetch all non-cancelled bookings (pending, confirmed, completed, etc.)
       const { data: bookingsData } = await supabase
         .from('bookings')
-        .select('booking_date, booking_time, status')
-        .eq('status', 'confirmed');
+        .select('booking_date, booking_time, end_time, status')
+        .neq('status', 'cancelled');
 
       if (bookingsData) {
         setBookings(bookingsData);

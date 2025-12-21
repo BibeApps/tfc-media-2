@@ -58,11 +58,11 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                 setBlackoutDates(mappedBlackouts);
             }
 
-            // Fetch confirmed bookings
+            // Fetch all non-cancelled bookings (pending, confirmed, completed, etc.)
             const { data: bookingsData } = await supabase
                 .from('bookings')
                 .select('booking_date, booking_time, end_time, status')
-                .eq('status', 'confirmed');
+                .neq('status', 'cancelled');
 
             if (bookingsData) {
                 setBookings(bookingsData);
@@ -92,13 +92,13 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
     const isDateBooked = (date: Date) => {
         const dateStr = date.toISOString().split('T')[0];
         const dayBookings = bookings.filter(b => b.booking_date === dateStr);
-        
+
         // Check if any booking is full day
         const hasFullDay = dayBookings.some(b => b.booking_time === 'Full Day' || b.end_time === 'Full Day');
         if (hasFullDay) {
             return 'full';
         }
-        
+
         return dayBookings.length > 0 ? 'partial' : null;
     };
 
@@ -192,8 +192,8 @@ const AvailabilityCalendar: React.FC<AvailabilityCalendarProps> = ({
                             disabled={isPast || !!blackout?.isFullDay || isFullyBooked}
                             whileHover={!isPast && !blackout?.isFullDay ? { scale: 1.05 } : {}}
                             className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-all relative overflow-hidden ${isPast || blackout?.isFullDay
-                                    || isFullyBooked ? 'cursor-not-allowed opacity-40'
-                                    : 'cursor-pointer'
+                                || isFullyBooked ? 'cursor-not-allowed opacity-40'
+                                : 'cursor-pointer'
                                 } ${blackout?.isFullDay
                                     ? 'bg-red-500 text-white'
                                     : isFullyBooked
