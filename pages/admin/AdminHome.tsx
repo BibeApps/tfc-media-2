@@ -17,10 +17,10 @@ const AdminHome: React.FC = () => {
 
     const adminPages = [
         {
-            title: 'Event Management',
-            description: 'Manage event categories and events',
+            title: 'Gallery Manager',
+            description: 'Upload media to event galleries',
             icon: FolderOpen,
-            path: '/admin/events',
+            path: '/admin/gallery',
             color: 'from-blue-500 to-cyan-500',
         },
         {

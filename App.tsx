@@ -29,6 +29,7 @@ import GalleryUpload from './pages/admin/GalleryUpload';
 import Orders from './pages/admin/Orders';
 import BlackoutDates from './pages/admin/BlackoutDates';
 import AdminHome from './pages/admin/AdminHome';
+import GalleryManager from './pages/admin/GalleryManager';
 import { CartProvider } from './context/CartContext';
 import { GalleryProvider } from './context/GalleryContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -100,10 +101,10 @@ function App() {
                           }
                         />
                         <Route
-                          path="admin/events"
+                          path="admin/gallery"
                           element={
                             <ProtectedRoute allowedRoles={['admin']}>
-                              <Events />
+                              <GalleryManager />
                             </ProtectedRoute>
                           }
                         />
