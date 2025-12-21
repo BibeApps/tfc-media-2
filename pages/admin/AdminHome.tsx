@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import {
     Calendar,
@@ -9,11 +10,19 @@ import {
     Ban,
     FolderOpen,
     Upload,
-    ArrowRight
+    ArrowRight,
+    Edit,
+    Briefcase,
+    Shield,
+    Mail,
+    Settings,
+    FileText,
+    ImageIcon
 } from 'lucide-react';
 
 const AdminHome: React.FC = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     const adminPages = [
         {
@@ -24,11 +33,18 @@ const AdminHome: React.FC = () => {
             color: 'from-blue-500 to-cyan-500',
         },
         {
+            title: 'Gallery Editor',
+            description: 'Manage gallery names and types',
+            icon: Edit,
+            path: '/admin/gallery-edit',
+            color: 'from-pink-500 to-rose-500', 
+        },
+        {
             title: 'Bookings',
             description: 'View and manage client bookings',
             icon: Calendar,
             path: '/admin/bookings',
-            color: 'from-purple-500 to-pink-500',
+            color: 'from-purple-500 to-violet-500',
         },
         {
             title: 'Orders',
@@ -44,18 +60,69 @@ const AdminHome: React.FC = () => {
             path: '/admin/blackout-dates',
             color: 'from-red-500 to-orange-500',
         },
+        {
+            title: 'Service Types',
+            description: 'Manage services and pricing',
+            icon: Briefcase,
+            path: '/admin/service-types',
+            color: 'from-cyan-500 to-blue-500',
+        },
+        {
+            title: 'Clients',
+            description: 'View and manage client database',
+            icon: Users,
+            path: '/admin/clients',
+            color: 'from-indigo-500 to-purple-500',
+        },
+        {
+            title: 'Projects',
+            description: 'Manage client deliverables',
+            icon: FileText,
+            path: '/admin/projects',
+            color: 'from-orange-500 to-amber-500',
+        },
+        {
+            title: 'Portfolio',
+            description: 'Update your portfolio content',
+            icon: Image,
+            path: '/admin/portfolio',
+            color: 'from-yellow-500 to-orange-500',
+        },
+        {
+            title: 'Team',
+            description: 'Manage team members and roles',
+            icon: Shield,
+            path: '/admin/team',
+            color: 'from-teal-500 to-emerald-500',
+        },
+        {
+            title: 'Notifications',
+            description: 'Configure email and SMS settings',
+            icon: Mail,
+            path: '/admin/notifications',
+            color: 'from-violet-500 to-purple-500',
+        },
+        {
+            title: 'Settings',
+            description: 'Global system configuration',
+            icon: Settings,
+            path: '/admin/settings',
+            color: 'from-gray-500 to-gray-700',
+        },
     ];
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-obsidian py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-                <div className="text-center mb-12">
-                    <h1 className="text-4xl font-heading font-bold text-gray-900 dark:text-white mb-4">
-                        Admin Dashboard
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-400 text-lg">
-                        Select a section to manage
-                    </p>
+                <div className="mb-12">
+                    <div className="bg-gradient-to-r from-electric to-blue-600 rounded-2xl p-8 text-white shadow-xl shadow-electric/20 mb-8">
+                         <h1 className="text-3xl font-bold mb-2">
+                           Welcome Back, {user?.name || 'Admin'}!
+                         </h1>
+                         <p className="text-blue-100 text-lg">
+                           Here's what's happening with your business today
+                         </p>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

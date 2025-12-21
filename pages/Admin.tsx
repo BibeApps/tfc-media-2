@@ -40,6 +40,7 @@ const StepIndicator: React.FC<{ currentStep: number }> = ({ currentStep }) => (
 // --- Dashboard Component ---
 const DashboardHome = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const data = [
     { name: 'Jan', revenue: 4000 },
@@ -67,6 +68,16 @@ const DashboardHome = () => {
 
   return (
     <div className="space-y-6">
+       {/* Welcome Message */}
+       <div className="bg-gradient-to-r from-electric to-blue-600 rounded-xl p-8 text-white">
+         <h1 className="text-3xl font-bold mb-2">
+           Welcome Back, {user?.name || 'Admin'}!
+         </h1>
+         <p className="text-blue-100">
+           Here's what's happening with your business today
+         </p>
+       </div>
+
        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white dark:bg-charcoal p-6 rounded-xl border border-gray-200 dark:border-white/5 shadow-sm">
              <div className="flex items-center justify-between mb-4">

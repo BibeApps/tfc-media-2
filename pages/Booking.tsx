@@ -28,7 +28,12 @@ interface Booking {
 const Booking: React.FC = () => {
   const { addBooking, isSlotAvailable, getBlackoutForDate } = useBooking();
   const [step, setStep] = useState(1);
-  const [serviceTypes, setServiceTypes] = useState<string[]>([]);
+  interface ServiceType {
+    id: string;
+    name: string;
+    base_price: number | null;
+  }
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -91,6 +96,25 @@ const Booking: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    fetchServiceTypes();
+  }, []);
+
+  const fetchServiceTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('service_types')
+        .select('id, name, base_price')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      setServiceTypes(data || []);
+    } catch (err) {
+      console.error('Error fetching service types:', err);
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
 
@@ -131,8 +155,8 @@ const Booking: React.FC = () => {
 
     // Send booking confirmation email
     try {
-      const timeDisplay = formData.isFullDay 
-        ? 'Full Day' 
+      const timeDisplay = formData.isFullDay
+        ? 'Full Day'
         : `${formData.time} - ${formData.endTime}`;
       await sendBookingConfirmation(
         formData.email,
@@ -258,10 +282,22 @@ const Booking: React.FC = () => {
                   onChange={handleChange}
                   className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-electric focus:border-transparent outline-none"
                 >
-                  <option>Photography Session</option>
-                  <option>Videography</option>
-                  <option>Event Coverage (Full Day)</option>
-                  <option>Brand Identity Package</option>
+                  <option value="">Select a service...</option>
+                  {serviceTypes.length > 0 ? (
+                    serviceTypes.map((service) => (
+                      <option key={service.id} value={service.name}>
+                        {service.name} {service.base_price ? `- $${service.base_price}` : ''}
+                      </option>
+                    ))
+                  ) : (
+                    // Fallback to default options if database is empty/fetch fails
+                    <>
+                      <option value="Photography Session">Photography Session - $299.99</option>
+                      <option value="Videography">Videography - $499.99</option>
+                      <option value="Event Coverage">Event Coverage - $799.99</option>
+                      <option value="Product Photography">Product Photography - $199.99</option>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -316,51 +352,23 @@ const Booking: React.FC = () => {
               </div>
 
               {!formData.isFullDay && (
-              <>
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
-                  Select Time Range for {formData.date}
-                </label>
-                
-                {/* Start Time */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-500 mb-2">Start Time</label>
-                  <select
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value, endTime: '' })}
-                    required
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-electric focus:border-transparent outline-none"
-                  >
-                    <option value="">Select start time...</option>
-                    {availableTimeSlots.map((time) => {
-                      const available = isSlotAvailable(formData.date, time);
-                      return (
-                        <option key={time} value={time} disabled={!available}>
-                          {time} {!available ? '(Unavailable)' : ''}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
+                <>
+                  <div className="space-y-4">
+                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
+                      Select Time Range for {formData.date}
+                    </label>
 
-                {/* End Time */}
-                {formData.time && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-500 mb-2">End Time</label>
-                    <select
-                      value={formData.endTime}
-                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                      required
-                      className="w-full px-4 py-3 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-electric focus:border-transparent outline-none"
-                    >
-                      <option value="">Select end time...</option>
-                      {availableTimeSlots
-                        .filter(time => {
-                          const startIdx = availableTimeSlots.indexOf(formData.time);
-                          const endIdx = availableTimeSlots.indexOf(time);
-                          return endIdx > startIdx;
-                        })
-                        .map((time) => {
+                    {/* Start Time */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-500 mb-2">Start Time</label>
+                      <select
+                        value={formData.time}
+                        onChange={(e) => setFormData({ ...formData, time: e.target.value, endTime: '' })}
+                        required
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-electric focus:border-transparent outline-none"
+                      >
+                        <option value="">Select start time...</option>
+                        {availableTimeSlots.map((time) => {
                           const available = isSlotAvailable(formData.date, time);
                           return (
                             <option key={time} value={time} disabled={!available}>
@@ -368,27 +376,55 @@ const Booking: React.FC = () => {
                             </option>
                           );
                         })}
-                    </select>
-                  </div>
-                )}
-
-                {/* Duration Display */}
-                {formData.time && formData.endTime && (
-                  <div className="bg-electric/10 dark:bg-electric/20 border border-electric/20 dark:border-electric/30 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="w-4 h-4 text-electric" />
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        Duration: {calculateDuration(formData.time, formData.endTime)}
-                      </span>
+                      </select>
                     </div>
-              
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      {formData.time} - {formData.endTime}
-                    </p>
+
+                    {/* End Time */}
+                    {formData.time && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-500 mb-2">End Time</label>
+                        <select
+                          value={formData.endTime}
+                          onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                          required
+                          className="w-full px-4 py-3 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-electric focus:border-transparent outline-none"
+                        >
+                          <option value="">Select end time...</option>
+                          {availableTimeSlots
+                            .filter(time => {
+                              const startIdx = availableTimeSlots.indexOf(formData.time);
+                              const endIdx = availableTimeSlots.indexOf(time);
+                              return endIdx > startIdx;
+                            })
+                            .map((time) => {
+                              const available = isSlotAvailable(formData.date, time);
+                              return (
+                                <option key={time} value={time} disabled={!available}>
+                                  {time} {!available ? '(Unavailable)' : ''}
+                                </option>
+                              );
+                            })}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Duration Display */}
+                    {formData.time && formData.endTime && (
+                      <div className="bg-electric/10 dark:bg-electric/20 border border-electric/20 dark:border-electric/30 rounded-lg p-3">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className="w-4 h-4 text-electric" />
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            Duration: {calculateDuration(formData.time, formData.endTime)}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                          {formData.time} - {formData.endTime}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              </>
+                </>
               )}
 
               <div className="space-y-2 mt-6">
