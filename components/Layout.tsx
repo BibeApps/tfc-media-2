@@ -23,7 +23,7 @@ const Navbar: React.FC = () => {
     { name: 'Gallery', path: '/gallery' },
     { name: 'About', path: '/about' },
     { name: 'Services', path: '/services' },
-    { name: 'Book', path: '/book' },
+    { name: 'Book Us', path: '/book' },
   ];
 
   const handleDashboardClick = () => {
