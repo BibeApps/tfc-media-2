@@ -117,7 +117,7 @@ function App() {
                             </ProtectedRoute>
                           }
                         >
-                          <Route path="gallery" element={<GalleryManager />} />
+                          <Route path="gallery" element={<GalleryManagerNew />} />
                           <Route path="bookings" element={<Bookings />} />
                           <Route path="sessions" element={<Sessions />} />
                           <Route path="gallery-upload" element={<GalleryUpload />} />
