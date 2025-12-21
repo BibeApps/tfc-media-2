@@ -24,6 +24,10 @@ import Downloads from './pages/portal/Downloads';
 import Settings from './pages/portal/Settings';
 import Events from './pages/admin/Events';
 import Bookings from './pages/admin/Bookings';
+import Sessions from './pages/admin/Sessions';
+import GalleryUpload from './pages/admin/GalleryUpload';
+import Orders from './pages/admin/Orders';
+import BlackoutDates from './pages/admin/BlackoutDates';
 import { CartProvider } from './context/CartContext';
 import { GalleryProvider } from './context/GalleryContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -107,6 +111,38 @@ function App() {
                           element={
                             <ProtectedRoute allowedRoles={['admin']}>
                               <Bookings />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="admin/sessions"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin']}>
+                              <Sessions />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="admin/gallery-upload"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin']}>
+                              <GalleryUpload />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="admin/orders"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin']}>
+                              <Orders />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="admin/blackout-dates"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin']}>
+                              <BlackoutDates />
                             </ProtectedRoute>
                           }
                         />
