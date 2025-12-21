@@ -208,19 +208,7 @@ const GalleryManagerNew: React.FC = () => {
                 return;
             }
 
-            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-            // Generate a detailed prompt for image generation
-            const prompt = `Create a professional, high-quality thumbnail image for a ${type} named "${name}". 
-            The image should be visually appealing, modern, vibrant, and suitable for a premium photography/media business gallery.
-            Style: Clean, professional, cinematic, with rich colors and excellent composition.`;
-
-            const result = await model.generateContent(prompt);
-            const response = result.response;
-            const text = response.text();
-
-            // Since Gemini doesn't directly generate images, we'll use a gradient with better styling
-            // In production, you would integrate with DALL-E, Midjourney, or Imagen API
+            // Create gradient-based thumbnail with unique colors based on name
             const canvas = document.createElement('canvas');
             canvas.width = 1200;
             canvas.height = 800;
@@ -239,7 +227,7 @@ const GalleryManagerNew: React.FC = () => {
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, 1200, 800);
 
-            // Add overlay pattern
+            // Add overlay pattern for visual interest
             ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
             for (let i = 0; i < 20; i++) {
                 ctx.beginPath();
@@ -247,25 +235,30 @@ const GalleryManagerNew: React.FC = () => {
                 ctx.fill();
             }
 
-            // Add text with better styling
+            // Add dark overlay for text readability
             ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.fillRect(0, 600, 1200, 200);
 
+            // Add main text (name)
             ctx.fillStyle = 'white';
             ctx.font = 'bold 72px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(name, 600, 700);
 
-            // Add subtitle
+            // Add subtitle (type)
             ctx.font = '32px Arial';
             ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             ctx.fillText(type.charAt(0).toUpperCase() + type.slice(1), 600, 760);
 
             // Convert to blob
-            const blob = await new Promise<Blob>((resolve) => {
+            const blob = await new Promise<Blob>((resolve, reject) => {
                 canvas.toBlob((blob) => {
-                    if (blob) resolve(blob);
+                    if (blob) {
+                        resolve(blob);
+                    } else {
+                        reject(new Error('Failed to create blob'));
+                    }
                 }, 'image/jpeg', 0.95);
             });
 
