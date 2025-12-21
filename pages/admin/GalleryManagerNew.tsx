@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Wand2, X, Check, Loader2, ArrowRight, ArrowLeft, Image as ImageIcon, Video, DollarSign, Plus, Edit } from 'lucide-react';
+import { Upload, Wand2, X, Check, Loader2, ArrowRight, ArrowLeft, Image as ImageIcon, Video, DollarSign, Plus, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -535,7 +535,7 @@ const GalleryManagerNew: React.FC = () => {
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Category</h3>
                                 {selectedCategory ? (
-                                    <Edit className="w-5 h-5 text-electric" />
+                                    <RefreshCw className="w-5 h-5 text-electric" />
                                 ) : (
                                     <Plus className="w-5 h-5 text-green-500" />
                                 )}
@@ -604,7 +604,7 @@ const GalleryManagerNew: React.FC = () => {
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sub-Category</h3>
                                 {selectedSubCategory ? (
-                                    <Edit className="w-5 h-5 text-electric" />
+                                    <RefreshCw className="w-5 h-5 text-electric" />
                                 ) : (
                                     <Plus className="w-5 h-5 text-green-500" />
                                 )}
@@ -674,7 +674,7 @@ const GalleryManagerNew: React.FC = () => {
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Event</h3>
                                 {selectedEvent ? (
-                                    <Edit className="w-5 h-5 text-electric" />
+                                    <RefreshCw className="w-5 h-5 text-electric" />
                                 ) : (
                                     <Plus className="w-5 h-5 text-green-500" />
                                 )}
