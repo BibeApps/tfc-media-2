@@ -16,10 +16,11 @@ import {
     Shield,
     Bell,
     UserCircle,
-    Image
+    Image,
+    Edit2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } '../context/ThemeContext';
 
 const AdminLayout: React.FC = () => {
     const { user, logout } = useAuth();
@@ -29,6 +30,7 @@ const AdminLayout: React.FC = () => {
     const navItems = [
         { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
         { path: '/admin/gallery', icon: FolderOpen, label: 'Gallery Manager' },
+        { path: '/admin/gallery-edit', icon: Edit2, label: 'Gallery Editor' },
         { path: '/admin/bookings', icon: Calendar, label: 'Bookings' },
         { path: '/admin/orders', icon: ShoppingBag, label: 'Orders' },
         { path: '/admin/blackout-dates', icon: Ban, label: 'Blackout Dates' },
