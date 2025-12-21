@@ -87,6 +87,11 @@ const GalleryManagerNew: React.FC = () => {
 
     const [generatingThumbnail, setGeneratingThumbnail] = useState<string | null>(null);
 
+    // Confirmation tracking for sequential flow
+    const [categoryConfirmed, setCategoryConfirmed] = useState(false);
+    const [subCategoryConfirmed, setSubCategoryConfirmed] = useState(false);
+    const [eventConfirmed, setEventConfirmed] = useState(false);
+
     // Step 2: Pricing
     const [defaultImagePrice, setDefaultImagePrice] = useState(25);
     const [defaultVideoPrice, setDefaultVideoPrice] = useState(50);
@@ -137,44 +142,84 @@ const GalleryManagerNew: React.FC = () => {
         if (categoryId === 'new') {
             setSelectedCategory(null);
             setCategoryPreview('');
+            setCategoryConfirmed(false);
+            setSubCategoryConfirmed(false);
+            setEventConfirmed(false);
             return;
         }
 
         const category = categories.find(c => c.id === categoryId);
         setSelectedCategory(category || null);
         setCategoryPreview(category?.thumbnail || '');
+        setCategoryConfirmed(!!category); // Auto-confirm if selecting existing
 
         if (category) {
             await fetchSubCategories(category.id);
         }
+
+        // Reset downstream confirmations
+        setSubCategoryConfirmed(false);
+        setEventConfirmed(false);
     };
 
     const handleSubCategoryChange = async (subCategoryId: string) => {
         if (subCategoryId === 'new') {
             setSelectedSubCategory(null);
             setSubCategoryPreview('');
+            setSubCategoryConfirmed(false);
+            setEventConfirmed(false);
             return;
         }
 
         const subCategory = subCategories.find(sc => sc.id === subCategoryId);
         setSelectedSubCategory(subCategory || null);
         setSubCategoryPreview(subCategory?.thumbnail || '');
+        setSubCategoryConfirmed(!!subCategory); // Auto-confirm if selecting existing
 
         if (subCategory) {
             await fetchEvents(subCategory.id);
         }
+
+        // Reset downstream confirmations
+        setEventConfirmed(false);
     };
 
     const handleEventChange = (eventId: string) => {
         if (eventId === 'new') {
             setSelectedEvent(null);
             setEventPreview('');
+            setEventConfirmed(false);
             return;
         }
 
         const event = events.find(e => e.id === eventId);
         setSelectedEvent(event || null);
         setEventPreview(event?.thumbnail || '');
+        setEventConfirmed(!!event); // Auto-confirm if selecting existing
+    };
+
+    const handleConfirmCategory = () => {
+        if (!selectedCategory && !newCategoryName) {
+            alert('Please select or enter a category name');
+            return;
+        }
+        setCategoryConfirmed(true);
+    };
+
+    const handleConfirmSubCategory = () => {
+        if (!selectedSubCategory && !newSubCategoryName) {
+            alert('Please select or enter a sub-category name');
+            return;
+        }
+        setSubCategoryConfirmed(true);
+    };
+
+    const handleConfirmEvent = () => {
+        if (!selectedEvent && !newEventName) {
+            alert('Please select or enter an event name');
+            return;
+        }
+        setEventConfirmed(true);
     };
 
     const handleThumbnailUpload = (type: 'category' | 'subcategory' | 'event', file: File) => {
@@ -593,10 +638,25 @@ const GalleryManagerNew: React.FC = () => {
                                     <img src={categoryPreview} alt="Category thumbnail" className="w-full h-full object-cover" />
                                 </div>
                             )}
+
+                            {!categoryConfirmed && (
+                                <button
+                                    onClick={handleConfirmCategory}
+                                    className="w-full mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
+                                >
+                                    <Check className="w-4 h-4" /> Confirm Category
+                                </button>
+                            )}
+
+                            {categoryConfirmed && (
+                                <div className="mt-4 px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-700 dark:text-green-400 text-center font-bold">
+                                    ✓ Confirmed
+                                </div>
+                            )}
                         </div>
 
                         {/* Sub-Category Card */}
-                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                        <div className={`bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6 ${!categoryConfirmed ? 'opacity-50 pointer-events-none' : ''}`}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sub-Category</h3>
                                 {selectedSubCategory ? (
@@ -609,7 +669,7 @@ const GalleryManagerNew: React.FC = () => {
                             <select
                                 value={selectedSubCategory?.id || 'new'}
                                 onChange={(e) => handleSubCategoryChange(e.target.value)}
-                                disabled={!selectedCategory && !newCategoryName}
+                                disabled={!categoryConfirmed}
                                 className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg disabled:opacity-50"
                             >
                                 <option value="new">Create New Sub-Category</option>
@@ -663,10 +723,25 @@ const GalleryManagerNew: React.FC = () => {
                                     <img src={subCategoryPreview} alt="Sub-category thumbnail" className="w-full h-full object-cover" />
                                 </div>
                             )}
+
+                            {categoryConfirmed && !subCategoryConfirmed && (
+                                <button
+                                    onClick={handleConfirmSubCategory}
+                                    className="w-full mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
+                                >
+                                    <Check className="w-4 h-4" /> Confirm Sub-Category
+                                </button>
+                            )}
+
+                            {subCategoryConfirmed && (
+                                <div className="mt-4 px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-700 dark:text-green-400 text-center font-bold">
+                                    ✓ Confirmed
+                                </div>
+                            )}
                         </div>
 
                         {/* Event Card */}
-                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                        <div className={`bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6 ${!subCategoryConfirmed ? 'opacity-50 pointer-events-none' : ''}`}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Event</h3>
                                 {selectedEvent ? (
@@ -679,7 +754,7 @@ const GalleryManagerNew: React.FC = () => {
                             <select
                                 value={selectedEvent?.id || 'new'}
                                 onChange={(e) => handleEventChange(e.target.value)}
-                                disabled={!selectedSubCategory && !newSubCategoryName}
+                                disabled={!subCategoryConfirmed}
                                 className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg disabled:opacity-50"
                             >
                                 <option value="new">Create New Event</option>
@@ -741,13 +816,29 @@ const GalleryManagerNew: React.FC = () => {
                                     <img src={eventPreview} alt="Event thumbnail" className="w-full h-full object-cover" />
                                 </div>
                             )}
+
+                            {subCategoryConfirmed && !eventConfirmed && (
+                                <button
+                                    onClick={handleConfirmEvent}
+                                    className="w-full mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
+                                >
+                                    <Check className="w-4 h-4" /> Confirm Event
+                                </button>
+                            )}
+
+                            {eventConfirmed && (
+                                <div className="mt-4 px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-700 dark:text-green-400 text-center font-bold">
+                                    ✓ Confirmed
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     <div className="flex justify-end">
                         <button
                             onClick={handleContinueToUpload}
-                            className="px-8 py-3 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold flex items-center gap-2"
+                            disabled={!eventConfirmed}
+                            className="px-8 py-3 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Continue <ArrowRight className="w-5 h-5" />
                         </button>
