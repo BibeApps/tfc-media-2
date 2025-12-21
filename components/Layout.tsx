@@ -21,15 +21,17 @@ const Navbar: React.FC = () => {
     { name: 'Home', path: '/' },
     { name: 'Portfolio', path: '/portfolio' },
     { name: 'Gallery', path: '/gallery' },
-    { name: 'Book Us', path: '/book' },
+    { name: 'About', path: '/about' },
+    { name: 'Services', path: '/services' },
+    { name: 'Book', path: '/book' },
   ];
 
   const handleDashboardClick = () => {
-      if (user?.role === 'admin') {
-          navigate('/admin');
-      } else {
-          navigate('/portal');
-      }
+    if (user?.role === 'admin') {
+      navigate('/admin');
+    } else {
+      navigate('/portal');
+    }
   };
 
   const isActive = (path: string) => location.pathname.startsWith(path) && path !== '/' ? true : location.pathname === path;
@@ -39,13 +41,13 @@ const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <Link to="/" className="flex-shrink-0 flex items-center gap-2 cursor-pointer">
-             <img 
-               src="/TFC_Media_Logo.png" 
-               alt="TFC Media" 
-               className="h-12 w-auto object-contain bg-obsidian p-1 rounded-lg" 
-             />
+            <img
+              src="/TFC_Media_Logo.png"
+              alt="TFC Media"
+              className="h-12 w-auto object-contain bg-obsidian p-1 rounded-lg"
+            />
           </Link>
-          
+
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-8">
               {navLinks.map((link) => (
@@ -57,29 +59,29 @@ const Navbar: React.FC = () => {
                   {link.name}
                 </NavLink>
               ))}
-              
+
               {/* Dynamic Auth Button - Updated text to LOGIN */}
               {isAuthenticated ? (
-                  <button
-                    onClick={handleDashboardClick}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900 dark:bg-white text-white dark:text-black font-bold text-sm hover:opacity-90 transition-opacity"
-                  >
-                      <User className="w-4 h-4" />
-                      Dashboard
-                  </button>
+                <button
+                  onClick={handleDashboardClick}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900 dark:bg-white text-white dark:text-black font-bold text-sm hover:opacity-90 transition-opacity"
+                >
+                  <User className="w-4 h-4" />
+                  Dashboard
+                </button>
               ) : (
-                  <NavLink
-                    to="/login"
-                    className={({ isActive }) => `px-4 py-2 rounded-full border border-gray-300 dark:border-white/20 text-sm font-bold transition-all ${isActive ? 'bg-electric text-white border-electric' : 'text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'}`}
-                  >
-                    Login
-                  </NavLink>
+                <NavLink
+                  to="/login"
+                  className={({ isActive }) => `px-4 py-2 rounded-full border border-gray-300 dark:border-white/20 text-sm font-bold transition-all ${isActive ? 'bg-electric text-white border-electric' : 'text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                >
+                  Login
+                </NavLink>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => setIsOpen(true)}
               className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-electric dark:hover:text-white transition-colors"
             >
@@ -105,7 +107,7 @@ const Navbar: React.FC = () => {
       {/* Mobile Menu */}
       <AnimatePresence>
         {isMenuOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
@@ -123,22 +125,22 @@ const Navbar: React.FC = () => {
                 </NavLink>
               ))}
               <div className="border-t border-gray-200 dark:border-white/10 my-2 pt-2">
-                  {isAuthenticated ? (
-                    <button
-                        onClick={() => { setIsMenuOpen(false); handleDashboardClick(); }}
-                        className="w-full text-left block px-3 py-2 rounded-md text-base font-bold text-electric bg-electric/10"
-                    >
-                        Go to Dashboard
-                    </button>
-                  ) : (
-                    <NavLink
-                        to="/login"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="block px-3 py-2 rounded-md text-base font-bold text-gray-600 dark:text-gray-300 hover:text-electric"
-                    >
-                        Login
-                    </NavLink>
-                  )}
+                {isAuthenticated ? (
+                  <button
+                    onClick={() => { setIsMenuOpen(false); handleDashboardClick(); }}
+                    className="w-full text-left block px-3 py-2 rounded-md text-base font-bold text-electric bg-electric/10"
+                  >
+                    Go to Dashboard
+                  </button>
+                ) : (
+                  <NavLink
+                    to="/login"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block px-3 py-2 rounded-md text-base font-bold text-gray-600 dark:text-gray-300 hover:text-electric"
+                  >
+                    Login
+                  </NavLink>
+                )}
               </div>
             </div>
           </motion.div>
@@ -197,10 +199,10 @@ const CartDrawer: React.FC = () => {
         throw new Error(result.error.message);
       }
       */
-      
+
       // --- SIMULATION FOR DEMO ---
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network request
-      
+
       alert(
         `Stripe Checkout Integration Configured!\n\nEnvironment: Test Mode\nKey: ${STRIPE_PUBLISHABLE_KEY.substring(0, 15)}...\n\nTo complete the payment flow, you need a backend endpoint to create a Stripe Checkout Session using the Secret Key.`
       );
@@ -217,14 +219,14 @@ const CartDrawer: React.FC = () => {
     <AnimatePresence>
       {isOpen && (
         <>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsOpen(false)}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
           />
-          <motion.div 
+          <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -258,7 +260,7 @@ const CartDrawer: React.FC = () => {
                       <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{item.type} Download</p>
                       <div className="flex items-center justify-between mt-2">
                         <span className="font-bold text-electric">${item.price.toFixed(2)}</span>
-                        <button 
+                        <button
                           onClick={() => removeItem(item.cartId)}
                           className="text-gray-400 hover:text-red-500 transition-colors p-1"
                         >
@@ -287,19 +289,19 @@ const CartDrawer: React.FC = () => {
                     <span>${total.toFixed(2)}</span>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={handleCheckout}
                   disabled={loading}
                   className="w-full bg-electric hover:bg-electric/90 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-electric/20 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {loading ? (
-                      <>Processing <Loader2 className="w-4 h-4 animate-spin" /></>
+                    <>Processing <Loader2 className="w-4 h-4 animate-spin" /></>
                   ) : (
-                      <>Checkout with Stripe <CreditCard className="w-4 h-4" /></>
+                    <>Checkout with Stripe <CreditCard className="w-4 h-4" /></>
                   )}
                 </button>
                 <div className="flex items-center justify-center gap-2 text-[10px] text-gray-400">
-                    <span>Secured by Stripe (Test Mode)</span>
+                  <span>Secured by Stripe (Test Mode)</span>
                 </div>
                 <button onClick={clearCart} className="w-full text-xs text-gray-500 hover:text-red-500 transition-colors">
                   Empty Cart
@@ -337,12 +339,13 @@ const Footer: React.FC = () => {
               </a>
             </div>
           </div>
-          
+
           <div>
             <h4 className="font-bold text-lg mb-6">Quick Links</h4>
             <ul className="space-y-3">
               <li><Link to="/portfolio" className="text-gray-400 hover:text-electric transition-colors">Portfolio</Link></li>
               <li><Link to="/gallery" className="text-gray-400 hover:text-electric transition-colors">Client Galleries</Link></li>
+              <li><Link to="/about" className="text-gray-400 hover:text-electric transition-colors">About Us</Link></li>
               <li><Link to="/services" className="text-gray-400 hover:text-electric transition-colors">Services</Link></li>
               <li><Link to="/book" className="text-gray-400 hover:text-electric transition-colors">Book Now</Link></li>
             </ul>
@@ -358,20 +361,20 @@ const Footer: React.FC = () => {
             </ul>
           </div>
         </div>
-        
+
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
           <p>© {new Date().getFullYear()} TFC Media Group. All rights reserved.</p>
           <div className="flex gap-6">
-             {/* Consolidated Footer Login Link */}
-             {isAuthenticated ? (
-                <Link to={user?.role === 'admin' ? '/admin' : '/portal'} className="hover:text-white transition-colors">
-                    Dashboard
-                </Link>
-             ) : (
-                <Link to="/login" className="hover:text-white transition-colors">
-                    Login
-                </Link>
-             )}
+            {/* Consolidated Footer Login Link */}
+            {isAuthenticated ? (
+              <Link to={user?.role === 'admin' ? '/admin' : '/portal'} className="hover:text-white transition-colors">
+                Dashboard
+              </Link>
+            ) : (
+              <Link to="/login" className="hover:text-white transition-colors">
+                Login
+              </Link>
+            )}
           </div>
         </div>
       </div>
