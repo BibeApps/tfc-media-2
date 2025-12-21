@@ -460,200 +460,203 @@ const GalleryManagerNew: React.FC = () => {
             {/* Step 1: Setup */}
             {currentStep === Step.SETUP && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                    {/* Category Card */}
-                    <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
-                        <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Category</h3>
+                    {/* Horizontal Grid Layout for Cards */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Category Card */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Category</h3>
 
-                        <select
-                            value={selectedCategory?.id || 'new'}
-                            onChange={(e) => handleCategoryChange(e.target.value)}
-                            className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg"
-                        >
-                            <option value="new">Create New Category</option>
-                            {categories.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                        </select>
-
-                        {!selectedCategory && (
-                            <input
-                                type="text"
-                                placeholder="Category Name"
-                                value={newCategoryName}
-                                onChange={(e) => setNewCategoryName(e.target.value)}
+                            <select
+                                value={selectedCategory?.id || 'new'}
+                                onChange={(e) => handleCategoryChange(e.target.value)}
                                 className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg"
-                            />
-                        )}
-
-                        <div className="flex gap-4 mb-4">
-                            <label className="flex-1 cursor-pointer">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => e.target.files && handleThumbnailUpload('category', e.target.files[0])}
-                                    className="hidden"
-                                />
-                                <div className="px-4 py-2 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-center hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
-                                    <Upload className="w-5 h-5 mx-auto mb-1" />
-                                    <span className="text-sm">Upload Image</span>
-                                </div>
-                            </label>
-
-                            <button
-                                onClick={() => handleGenerateThumbnail('category')}
-                                disabled={generatingThumbnail === 'category'}
-                                className="flex-1 px-4 py-2 bg-electric/10 border border-electric/20 rounded-lg hover:bg-electric/20 transition-colors disabled:opacity-50"
                             >
-                                {generatingThumbnail === 'category' ? (
-                                    <Loader2 className="w-5 h-5 mx-auto animate-spin" />
-                                ) : (
-                                    <>
-                                        <Wand2 className="w-5 h-5 mx-auto mb-1" />
-                                        <span className="text-sm">Generate with AI</span>
-                                    </>
-                                )}
-                            </button>
-                        </div>
+                                <option value="new">Create New Category</option>
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                ))}
+                            </select>
 
-                        {categoryPreview && (
-                            <div className="relative w-full h-32 bg-gray-100 dark:bg-obsidian rounded-lg overflow-hidden">
-                                <img src={categoryPreview} alt="Category thumbnail" className="w-full h-full object-cover" />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Sub-Category Card */}
-                    <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
-                        <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Sub-Category</h3>
-
-                        <select
-                            value={selectedSubCategory?.id || 'new'}
-                            onChange={(e) => handleSubCategoryChange(e.target.value)}
-                            disabled={!selectedCategory && !newCategoryName}
-                            className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg disabled:opacity-50"
-                        >
-                            <option value="new">Create New Sub-Category</option>
-                            {subCategories.map(sc => (
-                                <option key={sc.id} value={sc.id}>{sc.name}</option>
-                            ))}
-                        </select>
-
-                        {!selectedSubCategory && (
-                            <input
-                                type="text"
-                                placeholder="Sub-Category Name"
-                                value={newSubCategoryName}
-                                onChange={(e) => setNewSubCategoryName(e.target.value)}
-                                className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg"
-                            />
-                        )}
-
-                        <div className="flex gap-4 mb-4">
-                            <label className="flex-1 cursor-pointer">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => e.target.files && handleThumbnailUpload('subcategory', e.target.files[0])}
-                                    className="hidden"
-                                />
-                                <div className="px-4 py-2 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-center hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
-                                    <Upload className="w-5 h-5 mx-auto mb-1" />
-                                    <span className="text-sm">Upload Image</span>
-                                </div>
-                            </label>
-
-                            <button
-                                onClick={() => handleGenerateThumbnail('subcategory')}
-                                disabled={generatingThumbnail === 'subcategory'}
-                                className="flex-1 px-4 py-2 bg-electric/10 border border-electric/20 rounded-lg hover:bg-electric/20 transition-colors disabled:opacity-50"
-                            >
-                                {generatingThumbnail === 'subcategory' ? (
-                                    <Loader2 className="w-5 h-5 mx-auto animate-spin" />
-                                ) : (
-                                    <>
-                                        <Wand2 className="w-5 h-5 mx-auto mb-1" />
-                                        <span className="text-sm">Generate with AI</span>
-                                    </>
-                                )}
-                            </button>
-                        </div>
-
-                        {subCategoryPreview && (
-                            <div className="relative w-full h-32 bg-gray-100 dark:bg-obsidian rounded-lg overflow-hidden">
-                                <img src={subCategoryPreview} alt="Sub-category thumbnail" className="w-full h-full object-cover" />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Event Card */}
-                    <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
-                        <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Event</h3>
-
-                        <select
-                            value={selectedEvent?.id || 'new'}
-                            onChange={(e) => handleEventChange(e.target.value)}
-                            disabled={!selectedSubCategory && !newSubCategoryName}
-                            className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg disabled:opacity-50"
-                        >
-                            <option value="new">Create New Event</option>
-                            {events.map(evt => (
-                                <option key={evt.id} value={evt.id}>{evt.name}</option>
-                            ))}
-                        </select>
-
-                        {!selectedEvent && (
-                            <>
+                            {!selectedCategory && (
                                 <input
                                     type="text"
-                                    placeholder="Event Name"
-                                    value={newEventName}
-                                    onChange={(e) => setNewEventName(e.target.value)}
+                                    placeholder="Category Name"
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
                                     className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg"
                                 />
-                                <input
-                                    type="date"
-                                    value={newEventDate}
-                                    onChange={(e) => setNewEventDate(e.target.value)}
-                                    className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg"
-                                />
-                            </>
-                        )}
+                            )}
 
-                        <div className="flex gap-4 mb-4">
-                            <label className="flex-1 cursor-pointer">
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => e.target.files && handleThumbnailUpload('event', e.target.files[0])}
-                                    className="hidden"
-                                />
-                                <div className="px-4 py-2 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-center hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
-                                    <Upload className="w-5 h-5 mx-auto mb-1" />
-                                    <span className="text-sm">Upload Image</span>
+                            <div className="flex gap-2 mb-4">
+                                <label className="flex-1 cursor-pointer">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => e.target.files && handleThumbnailUpload('category', e.target.files[0])}
+                                        className="hidden"
+                                    />
+                                    <div className="px-3 py-2 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-center hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
+                                        <Upload className="w-4 h-4 mx-auto mb-1" />
+                                        <span className="text-xs">Upload</span>
+                                    </div>
+                                </label>
+
+                                <button
+                                    onClick={() => handleGenerateThumbnail('category')}
+                                    disabled={generatingThumbnail === 'category'}
+                                    className="flex-1 px-3 py-2 bg-electric/10 border border-electric/20 rounded-lg hover:bg-electric/20 transition-colors disabled:opacity-50"
+                                >
+                                    {generatingThumbnail === 'category' ? (
+                                        <Loader2 className="w-4 h-4 mx-auto animate-spin" />
+                                    ) : (
+                                        <>
+                                            <Wand2 className="w-4 h-4 mx-auto mb-1" />
+                                            <span className="text-xs">AI Gen</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {categoryPreview && (
+                                <div className="relative w-full h-32 bg-gray-100 dark:bg-obsidian rounded-lg overflow-hidden">
+                                    <img src={categoryPreview} alt="Category thumbnail" className="w-full h-full object-cover" />
                                 </div>
-                            </label>
-
-                            <button
-                                onClick={() => handleGenerateThumbnail('event')}
-                                disabled={generatingThumbnail === 'event'}
-                                className="flex-1 px-4 py-2 bg-electric/10 border border-electric/20 rounded-lg hover:bg-electric/20 transition-colors disabled:opacity-50"
-                            >
-                                {generatingThumbnail === 'event' ? (
-                                    <Loader2 className="w-5 h-5 mx-auto animate-spin" />
-                                ) : (
-                                    <>
-                                        <Wand2 className="w-5 h-5 mx-auto mb-1" />
-                                        <span className="text-sm">Generate with AI</span>
-                                    </>
-                                )}
-                            </button>
+                            )}
                         </div>
 
-                        {eventPreview && (
-                            <div className="relative w-full h-32 bg-gray-100 dark:bg-obsidian rounded-lg overflow-hidden">
-                                <img src={eventPreview} alt="Event thumbnail" className="w-full h-full object-cover" />
+                        {/* Sub-Category Card */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Sub-Category</h3>
+
+                            <select
+                                value={selectedSubCategory?.id || 'new'}
+                                onChange={(e) => handleSubCategoryChange(e.target.value)}
+                                disabled={!selectedCategory && !newCategoryName}
+                                className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg disabled:opacity-50"
+                            >
+                                <option value="new">Create New Sub-Category</option>
+                                {subCategories.map(sc => (
+                                    <option key={sc.id} value={sc.id}>{sc.name}</option>
+                                ))}
+                            </select>
+
+                            {!selectedSubCategory && (
+                                <input
+                                    type="text"
+                                    placeholder="Sub-Category Name"
+                                    value={newSubCategoryName}
+                                    onChange={(e) => setNewSubCategoryName(e.target.value)}
+                                    className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg"
+                                />
+                            )}
+
+                            <div className="flex gap-2 mb-4">
+                                <label className="flex-1 cursor-pointer">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => e.target.files && handleThumbnailUpload('subcategory', e.target.files[0])}
+                                        className="hidden"
+                                    />
+                                    <div className="px-3 py-2 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-center hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
+                                        <Upload className="w-4 h-4 mx-auto mb-1" />
+                                        <span className="text-xs">Upload</span>
+                                    </div>
+                                </label>
+
+                                <button
+                                    onClick={() => handleGenerateThumbnail('subcategory')}
+                                    disabled={generatingThumbnail === 'subcategory'}
+                                    className="flex-1 px-3 py-2 bg-electric/10 border border-electric/20 rounded-lg hover:bg-electric/20 transition-colors disabled:opacity-50"
+                                >
+                                    {generatingThumbnail === 'subcategory' ? (
+                                        <Loader2 className="w-4 h-4 mx-auto animate-spin" />
+                                    ) : (
+                                        <>
+                                            <Wand2 className="w-4 h-4 mx-auto mb-1" />
+                                            <span className="text-xs">AI Gen</span>
+                                        </>
+                                    )}
+                                </button>
                             </div>
-                        )}
+
+                            {subCategoryPreview && (
+                                <div className="relative w-full h-32 bg-gray-100 dark:bg-obsidian rounded-lg overflow-hidden">
+                                    <img src={subCategoryPreview} alt="Sub-category thumbnail" className="w-full h-full object-cover" />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Event Card */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Event</h3>
+
+                            <select
+                                value={selectedEvent?.id || 'new'}
+                                onChange={(e) => handleEventChange(e.target.value)}
+                                disabled={!selectedSubCategory && !newSubCategoryName}
+                                className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg disabled:opacity-50"
+                            >
+                                <option value="new">Create New Event</option>
+                                {events.map(evt => (
+                                    <option key={evt.id} value={evt.id}>{evt.name}</option>
+                                ))}
+                            </select>
+
+                            {!selectedEvent && (
+                                <>
+                                    <input
+                                        type="text"
+                                        placeholder="Event Name"
+                                        value={newEventName}
+                                        onChange={(e) => setNewEventName(e.target.value)}
+                                        className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg"
+                                    />
+                                    <input
+                                        type="date"
+                                        value={newEventDate}
+                                        onChange={(e) => setNewEventDate(e.target.value)}
+                                        className="w-full mb-4 px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg"
+                                    />
+                                </>
+                            )}
+
+                            <div className="flex gap-2 mb-4">
+                                <label className="flex-1 cursor-pointer">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => e.target.files && handleThumbnailUpload('event', e.target.files[0])}
+                                        className="hidden"
+                                    />
+                                    <div className="px-3 py-2 bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-center hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
+                                        <Upload className="w-4 h-4 mx-auto mb-1" />
+                                        <span className="text-xs">Upload</span>
+                                    </div>
+                                </label>
+
+                                <button
+                                    onClick={() => handleGenerateThumbnail('event')}
+                                    disabled={generatingThumbnail === 'event'}
+                                    className="flex-1 px-3 py-2 bg-electric/10 border border-electric/20 rounded-lg hover:bg-electric/20 transition-colors disabled:opacity-50"
+                                >
+                                    {generatingThumbnail === 'event' ? (
+                                        <Loader2 className="w-4 h-4 mx-auto animate-spin" />
+                                    ) : (
+                                        <>
+                                            <Wand2 className="w-4 h-4 mx-auto mb-1" />
+                                            <span className="text-xs">AI Gen</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {eventPreview && (
+                                <div className="relative w-full h-32 bg-gray-100 dark:bg-obsidian rounded-lg overflow-hidden">
+                                    <img src={eventPreview} alt="Event thumbnail" className="w-full h-full object-cover" />
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <button
