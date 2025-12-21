@@ -31,7 +31,7 @@ import GalleryUpload from './pages/admin/GalleryUpload';
 import Orders from './pages/admin/Orders';
 import BlackoutDates from './pages/admin/BlackoutDates';
 import AdminHome from './pages/admin/AdminHome';
-import GalleryManager from './pages/admin/GalleryManager';
+import GalleryManagerNew from './pages/admin/GalleryManagerNew';
 import Clients from './pages/admin/Clients';
 import Team from './pages/admin/Team';
 import PortfolioAdmin from './pages/admin/PortfolioAdmin';
