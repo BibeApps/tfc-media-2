@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Wand2, X, Check, Loader2, ArrowRight, ArrowLeft, Image as ImageIcon, Video, DollarSign } from 'lucide-react';
+import { Upload, Wand2, X, Check, Loader2, ArrowRight, ArrowLeft, Image as ImageIcon, Video, DollarSign, Plus, Edit } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
-    generateThumbnailWithAI,
     uploadThumbnail,
     generateMediaDescription,
     uploadOriginalMedia,
@@ -11,6 +11,8 @@ import {
     detectMediaType,
     getImageDimensions,
 } from '../../utils/aiUtils';
+
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
 
 interface Category {
     id: string;
@@ -196,16 +198,82 @@ const GalleryManagerNew: React.FC = () => {
     const handleGenerateThumbnail = async (type: 'category' | 'subcategory' | 'event') => {
         setGeneratingThumbnail(type);
         try {
-            const name = type === 'category' ? newCategoryName :
-                type === 'subcategory' ? newSubCategoryName : newEventName;
+            const name = type === 'category' ? newCategoryName || selectedCategory?.name :
+                type === 'subcategory' ? newSubCategoryName || selectedSubCategory?.name :
+                    newEventName || selectedEvent?.name;
 
-            const blob = await generateThumbnailWithAI(name, type);
+            if (!name) {
+                alert('Please enter a name first');
+                setGeneratingThumbnail(null);
+                return;
+            }
+
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+            // Generate a detailed prompt for image generation
+            const prompt = `Create a professional, high-quality thumbnail image for a ${type} named "${name}". 
+            The image should be visually appealing, modern, vibrant, and suitable for a premium photography/media business gallery.
+            Style: Clean, professional, cinematic, with rich colors and excellent composition.`;
+
+            const result = await model.generateContent(prompt);
+            const response = result.response;
+            const text = response.text();
+
+            // Since Gemini doesn't directly generate images, we'll use a gradient with better styling
+            // In production, you would integrate with DALL-E, Midjourney, or Imagen API
+            const canvas = document.createElement('canvas');
+            canvas.width = 1200;
+            canvas.height = 800;
+            const ctx = canvas.getContext('2d');
+
+            if (!ctx) throw new Error('Could not get canvas context');
+
+            // Create dynamic gradient based on name hash
+            const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const hue1 = hash % 360;
+            const hue2 = (hash + 120) % 360;
+
+            const gradient = ctx.createLinearGradient(0, 0, 1200, 800);
+            gradient.addColorStop(0, `hsl(${hue1}, 70%, 50%)`);
+            gradient.addColorStop(1, `hsl(${hue2}, 70%, 40%)`);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1200, 800);
+
+            // Add overlay pattern
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            for (let i = 0; i < 20; i++) {
+                ctx.beginPath();
+                ctx.arc(Math.random() * 1200, Math.random() * 800, Math.random() * 100, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Add text with better styling
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(0, 600, 1200, 200);
+
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 72px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(name, 600, 700);
+
+            // Add subtitle
+            ctx.font = '32px Arial';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.fillText(type.charAt(0).toUpperCase() + type.slice(1), 600, 760);
+
+            // Convert to blob
+            const blob = await new Promise<Blob>((resolve) => {
+                canvas.toBlob((blob) => {
+                    if (blob) resolve(blob);
+                }, 'image/jpeg', 0.95);
+            });
+
             const file = new File([blob], `${name}-thumbnail.jpg`, { type: 'image/jpeg' });
-
             handleThumbnailUpload(type, file);
         } catch (error) {
             console.error('Error generating thumbnail:', error);
-            alert('Failed to generate thumbnail');
+            alert('Failed to generate thumbnail. Please try again or upload manually.');
         } finally {
             setGeneratingThumbnail(null);
         }
@@ -464,7 +532,14 @@ const GalleryManagerNew: React.FC = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Category Card */}
                         <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
-                            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Category</h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Category</h3>
+                                {selectedCategory ? (
+                                    <Edit className="w-5 h-5 text-electric" />
+                                ) : (
+                                    <Plus className="w-5 h-5 text-green-500" />
+                                )}
+                            </div>
 
                             <select
                                 value={selectedCategory?.id || 'new'}
@@ -526,7 +601,14 @@ const GalleryManagerNew: React.FC = () => {
 
                         {/* Sub-Category Card */}
                         <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
-                            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Sub-Category</h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sub-Category</h3>
+                                {selectedSubCategory ? (
+                                    <Edit className="w-5 h-5 text-electric" />
+                                ) : (
+                                    <Plus className="w-5 h-5 text-green-500" />
+                                )}
+                            </div>
 
                             <select
                                 value={selectedSubCategory?.id || 'new'}
@@ -589,7 +671,14 @@ const GalleryManagerNew: React.FC = () => {
 
                         {/* Event Card */}
                         <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
-                            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Event</h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Event</h3>
+                                {selectedEvent ? (
+                                    <Edit className="w-5 h-5 text-electric" />
+                                ) : (
+                                    <Plus className="w-5 h-5 text-green-500" />
+                                )}
+                            </div>
 
                             <select
                                 value={selectedEvent?.id || 'new'}
@@ -659,12 +748,14 @@ const GalleryManagerNew: React.FC = () => {
                         </div>
                     </div>
 
-                    <button
-                        onClick={handleContinueToUpload}
-                        className="w-full px-6 py-3 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold flex items-center justify-center gap-2"
-                    >
-                        Continue <ArrowRight className="w-5 h-5" />
-                    </button>
+                    <div className="flex justify-end">
+                        <button
+                            onClick={handleContinueToUpload}
+                            className="px-8 py-3 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold flex items-center gap-2"
+                        >
+                            Continue <ArrowRight className="w-5 h-5" />
+                        </button>
+                    </div>
                 </motion.div>
             )}
 
