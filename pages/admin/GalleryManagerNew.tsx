@@ -198,28 +198,156 @@ const GalleryManagerNew: React.FC = () => {
         setEventConfirmed(false); // Don't auto-confirm - allow updates
     };
 
-    const handleConfirmCategory = () => {
+    const handleConfirmCategory = async () => {
         if (!selectedCategory && !newCategoryName) {
             alert('Please select or enter a category name');
             return;
         }
-        setCategoryConfirmed(true);
+
+        try {
+            // If creating new category
+            if (!selectedCategory && newCategoryName) {
+                const { data, error } = await supabase
+                    .from('event_categories')
+                    .insert({
+                        name: newCategoryName,
+                        thumbnail: categoryPreview || null
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                setSelectedCategory(data);
+                await fetchCategories();
+                alert('Category created successfully!');
+            }
+            // If updating existing category with new thumbnail
+            else if (selectedCategory && categoryThumbnail) {
+                const { error } = await supabase
+                    .from('event_categories')
+                    .update({
+                        thumbnail: categoryPreview
+                    })
+                    .eq('id', selectedCategory.id);
+
+                if (error) throw error;
+
+                await fetchCategories();
+                alert('Category thumbnail updated successfully!');
+            }
+
+            setCategoryConfirmed(true);
+        } catch (error) {
+            console.error('Error saving category:', error);
+            alert('Failed to save category. Please try again.');
+        }
     };
 
-    const handleConfirmSubCategory = () => {
+    const handleConfirmSubCategory = async () => {
         if (!selectedSubCategory && !newSubCategoryName) {
             alert('Please select or enter a sub-category name');
             return;
         }
-        setSubCategoryConfirmed(true);
+
+        if (!selectedCategory) {
+            alert('Please save category first');
+            return;
+        }
+
+        try {
+            // If creating new sub-category
+            if (!selectedSubCategory && newSubCategoryName) {
+                const { data, error } = await supabase
+                    .from('events')
+                    .insert({
+                        name: newSubCategoryName,
+                        category_id: selectedCategory.id,
+                        thumbnail: subCategoryPreview || null
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                setSelectedSubCategory(data);
+                await fetchSubCategories(selectedCategory.id);
+                alert('Sub-Category created successfully!');
+            }
+            // If updating existing sub-category with new thumbnail
+            else if (selectedSubCategory && subCategoryThumbnail) {
+                const { error } = await supabase
+                    .from('events')
+                    .update({
+                        thumbnail: subCategoryPreview
+                    })
+                    .eq('id', selectedSubCategory.id);
+
+                if (error) throw error;
+
+                await fetchSubCategories(selectedCategory.id);
+                alert('Sub-Category thumbnail updated successfully!');
+            }
+
+            setSubCategoryConfirmed(true);
+        } catch (error) {
+            console.error('Error saving sub-category:', error);
+            alert('Failed to save sub-category. Please try again.');
+        }
     };
 
-    const handleConfirmEvent = () => {
+    const handleConfirmEvent = async () => {
         if (!selectedEvent && !newEventName) {
             alert('Please select or enter an event name');
             return;
         }
-        setEventConfirmed(true);
+
+        if (!selectedSubCategory) {
+            alert('Please save sub-category first');
+            return;
+        }
+
+        try {
+            // If creating new event
+            if (!selectedEvent && newEventName) {
+                const { data, error } = await supabase
+                    .from('sessions')
+                    .insert({
+                        name: newEventName,
+                        event_id: selectedSubCategory.id,
+                        event_date: newEventDate || null,
+                        thumbnail: eventPreview || null
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                setSelectedEvent(data);
+                await fetchEvents(selectedSubCategory.id);
+                alert('Event created successfully!');
+            }
+            // If updating existing event with new thumbnail
+            else if (selectedEvent && eventThumbnail) {
+                const { error } = await supabase
+                    .from('sessions')
+                    .update({
+                        thumbnail: eventPreview,
+                        event_date: newEventDate || selectedEvent.date // Assuming 'date' is the field for event_date in selectedEvent
+                    })
+                    .eq('id', selectedEvent.id);
+
+                if (error) throw error;
+
+                await fetchEvents(selectedSubCategory.id);
+                alert('Event updated successfully!');
+            }
+
+            setEventConfirmed(true);
+        } catch (error) {
+            console.error('Error saving event:', error);
+            alert('Failed to save event. Please try again.');
+        }
     };
 
     const handleThumbnailUpload = (type: 'category' | 'subcategory' | 'event', file: File) => {
@@ -644,7 +772,8 @@ const GalleryManagerNew: React.FC = () => {
                                     onClick={handleConfirmCategory}
                                     className="w-full mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
                                 >
-                                    <Check className="w-4 h-4" /> {selectedCategory ? 'Update Category' : 'Save Category'}
+                                    <Check className="w-4 h-4" />
+                                    {!selectedCategory ? 'Save Category' : categoryThumbnail ? 'Update Category' : 'Continue'}
                                 </button>
                             )}
 
@@ -729,7 +858,8 @@ const GalleryManagerNew: React.FC = () => {
                                     onClick={handleConfirmSubCategory}
                                     className="w-full mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
                                 >
-                                    <Check className="w-4 h-4" /> {selectedSubCategory ? 'Update Sub-Category' : 'Save Sub-Category'}
+                                    <Check className="w-4 h-4" />
+                                    {!selectedSubCategory ? 'Save Sub-Category' : subCategoryThumbnail ? 'Update Sub-Category' : 'Continue'}
                                 </button>
                             )}
 
@@ -822,7 +952,8 @@ const GalleryManagerNew: React.FC = () => {
                                     onClick={handleConfirmEvent}
                                     className="w-full mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
                                 >
-                                    <Check className="w-4 h-4" /> {selectedEvent ? 'Update Event' : 'Save Event'}
+                                    <Check className="w-4 h-4" />
+                                    {!selectedEvent ? 'Save Event' : eventThumbnail ? 'Update Event' : 'Continue'}
                                 </button>
                             )}
 
