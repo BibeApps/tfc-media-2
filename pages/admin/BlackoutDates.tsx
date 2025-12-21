@@ -168,12 +168,12 @@ const BlackoutDates: React.FC = () => {
                                         key={day}
                                         whileHover={{ scale: 1.05 }}
                                         className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-colors cursor-pointer relative overflow-hidden ${blackout
-                                                ? isPartialDay
-                                                    ? 'bg-gray-50 dark:bg-obsidian text-gray-900 dark:text-white'
-                                                    : 'bg-red-500 text-white'
-                                                : isToday
-                                                    ? 'bg-electric text-white'
-                                                    : 'bg-gray-50 dark:bg-obsidian text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'
+                                            ? isPartialDay
+                                                ? 'bg-gray-50 dark:bg-obsidian text-gray-900 dark:text-white'
+                                                : 'bg-red-500 text-white'
+                                            : isToday
+                                                ? 'bg-electric text-white'
+                                                : 'bg-gray-50 dark:bg-obsidian text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'
                                             }`}
                                     >
                                         {isPartialDay && (
@@ -318,7 +318,12 @@ const BlackoutModal: React.FC<{
                             <input
                                 type="checkbox"
                                 checked={formData.isFullDay}
-                                onChange={(e) => setFormData({ ...formData, isFullDay: e.target.checked })}
+                                onChange={(e) => setFormData({
+                                    ...formData,
+                                    isFullDay: e.target.checked,
+                                    startTime: e.target.checked ? '' : formData.startTime,
+                                    endTime: e.target.checked ? '' : formData.endTime
+                                })}
                                 className="w-4 h-4 text-electric focus:ring-electric rounded"
                             />
                             <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Full Day Blackout</span>
