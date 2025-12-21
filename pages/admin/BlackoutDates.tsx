@@ -161,19 +161,25 @@ const BlackoutDates: React.FC = () => {
                                 const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
                                 const blackout = isBlackoutDate(date);
                                 const isToday = new Date().toDateString() === date.toDateString();
+                                const isPartialDay = blackout && !blackout.isFullDay;
 
                                 return (
                                     <motion.div
                                         key={day}
                                         whileHover={{ scale: 1.05 }}
-                                        className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-colors cursor-pointer ${blackout
-                                                ? 'bg-red-500 text-white'
+                                        className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-colors cursor-pointer relative overflow-hidden ${blackout
+                                                ? isPartialDay
+                                                    ? 'bg-gray-50 dark:bg-obsidian text-gray-900 dark:text-white'
+                                                    : 'bg-red-500 text-white'
                                                 : isToday
                                                     ? 'bg-electric text-white'
                                                     : 'bg-gray-50 dark:bg-obsidian text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10'
                                             }`}
                                     >
-                                        {day}
+                                        {isPartialDay && (
+                                            <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-red-500/70" />
+                                        )}
+                                        <span className="relative z-10">{day}</span>
                                     </motion.div>
                                 );
                             })}
@@ -203,11 +209,15 @@ const BlackoutDates: React.FC = () => {
                                             <div className="flex items-center gap-2">
                                                 <CalendarIcon className="w-4 h-4 text-red-500" />
                                                 <span className="font-bold text-gray-900 dark:text-white">
-                                                    {new Date(blackout.date).toLocaleDateString('en-US', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        year: 'numeric',
-                                                    })}
+                                                    {(() => {
+                                                        const [year, month, day] = blackout.date.split('-').map(Number);
+                                                        const localDate = new Date(year, month - 1, day);
+                                                        return localDate.toLocaleDateString('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            year: 'numeric',
+                                                        });
+                                                    })()}
                                                 </span>
                                             </div>
                                             <button
