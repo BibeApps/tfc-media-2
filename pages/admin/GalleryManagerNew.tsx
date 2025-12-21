@@ -151,7 +151,7 @@ const GalleryManagerNew: React.FC = () => {
         const category = categories.find(c => c.id === categoryId);
         setSelectedCategory(category || null);
         setCategoryPreview(category?.thumbnail || '');
-        setCategoryConfirmed(!!category); // Auto-confirm if selecting existing
+        setCategoryConfirmed(false); // Don't auto-confirm - allow updates
 
         if (category) {
             await fetchSubCategories(category.id);
@@ -174,7 +174,7 @@ const GalleryManagerNew: React.FC = () => {
         const subCategory = subCategories.find(sc => sc.id === subCategoryId);
         setSelectedSubCategory(subCategory || null);
         setSubCategoryPreview(subCategory?.thumbnail || '');
-        setSubCategoryConfirmed(!!subCategory); // Auto-confirm if selecting existing
+        setSubCategoryConfirmed(false); // Don't auto-confirm - allow updates
 
         if (subCategory) {
             await fetchEvents(subCategory.id);
@@ -195,7 +195,7 @@ const GalleryManagerNew: React.FC = () => {
         const event = events.find(e => e.id === eventId);
         setSelectedEvent(event || null);
         setEventPreview(event?.thumbnail || '');
-        setEventConfirmed(!!event); // Auto-confirm if selecting existing
+        setEventConfirmed(false); // Don't auto-confirm - allow updates
     };
 
     const handleConfirmCategory = () => {
@@ -644,7 +644,7 @@ const GalleryManagerNew: React.FC = () => {
                                     onClick={handleConfirmCategory}
                                     className="w-full mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
                                 >
-                                    <Check className="w-4 h-4" /> Confirm Category
+                                    <Check className="w-4 h-4" /> {selectedCategory ? 'Update Category' : 'Save Category'}
                                 </button>
                             )}
 
@@ -729,7 +729,7 @@ const GalleryManagerNew: React.FC = () => {
                                     onClick={handleConfirmSubCategory}
                                     className="w-full mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
                                 >
-                                    <Check className="w-4 h-4" /> Confirm Sub-Category
+                                    <Check className="w-4 h-4" /> {selectedSubCategory ? 'Update Sub-Category' : 'Save Sub-Category'}
                                 </button>
                             )}
 
@@ -822,7 +822,7 @@ const GalleryManagerNew: React.FC = () => {
                                     onClick={handleConfirmEvent}
                                     className="w-full mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
                                 >
-                                    <Check className="w-4 h-4" /> Confirm Event
+                                    <Check className="w-4 h-4" /> {selectedEvent ? 'Update Event' : 'Save Event'}
                                 </button>
                             )}
 
