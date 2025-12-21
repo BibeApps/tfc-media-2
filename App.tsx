@@ -15,12 +15,15 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import AboutUs from './pages/AboutUs';
 import PortalLayout from './pages/portal/PortalLayout';
 import Dashboard from './pages/portal/Dashboard';
 import Projects from './pages/portal/Projects';
 import Purchases from './pages/portal/Purchases';
 import Downloads from './pages/portal/Downloads';
 import Settings from './pages/portal/Settings';
+import Events from './pages/admin/Events';
+import Bookings from './pages/admin/Bookings';
 import { CartProvider } from './context/CartContext';
 import { GalleryProvider } from './context/GalleryContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -72,6 +75,7 @@ function App() {
                         <Route path="gallery" element={<Gallery />} />
                         <Route path="book" element={<Booking />} />
                         <Route path="services" element={<Services />} />
+                        <Route path="about" element={<AboutUs />} />
                         <Route path="faq" element={<FAQ />} />
                         <Route path="licensing" element={<Licensing />} />
                         <Route path="privacy" element={<PrivacyPolicy />} />
@@ -80,20 +84,36 @@ function App() {
                         <Route path="signup" element={<Signup />} />
                         <Route path="forgot-password" element={<ForgotPassword />} />
                         <Route path="reset-password" element={<ResetPassword />} />
-                        
+
                         {/* Admin Routes - Protected */}
-                        <Route 
-                          path="admin" 
+                        <Route
+                          path="admin"
                           element={
                             <ProtectedRoute allowedRoles={['admin']}>
                               <Admin />
                             </ProtectedRoute>
-                          } 
+                          }
                         />
-                        
+                        <Route
+                          path="admin/events"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin']}>
+                              <Events />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="admin/bookings"
+                          element={
+                            <ProtectedRoute allowedRoles={['admin']}>
+                              <Bookings />
+                            </ProtectedRoute>
+                          }
+                        />
+
                         {/* Client Portal Routes - Protected */}
-                        <Route 
-                          path="portal" 
+                        <Route
+                          path="portal"
                           element={
                             <ProtectedRoute allowedRoles={['client']}>
                               <PortalLayout />
