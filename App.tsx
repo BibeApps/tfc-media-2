@@ -28,6 +28,7 @@ import Sessions from './pages/admin/Sessions';
 import GalleryUpload from './pages/admin/GalleryUpload';
 import Orders from './pages/admin/Orders';
 import BlackoutDates from './pages/admin/BlackoutDates';
+import AdminHome from './pages/admin/AdminHome';
 import { CartProvider } from './context/CartContext';
 import { GalleryProvider } from './context/GalleryContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -94,7 +95,7 @@ function App() {
                           path="admin"
                           element={
                             <ProtectedRoute allowedRoles={['admin']}>
-                              <Admin />
+                              <AdminHome />
                             </ProtectedRoute>
                           }
                         />
