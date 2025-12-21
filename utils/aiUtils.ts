@@ -247,17 +247,42 @@ const addWatermarkToImage = async (file: File): Promise<Blob> => {
             // Draw original image
             ctx.drawImage(img, 0, 0);
 
-            // Add watermark
-            ctx.font = 'bold 48px Arial';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            // Configure watermark text
+            const fontSize = Math.max(40, Math.min(img.width, img.height) / 15);
+            ctx.font = `bold ${fontSize}px Arial`;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Diagonal watermark
+            // Calculate spacing for tiled watermarks
+            const watermarkText = 'TFC MEDIA';
+            const textMetrics = ctx.measureText(watermarkText);
+            const textWidth = textMetrics.width;
+            const textHeight = fontSize;
+
+            // Spacing between watermarks (diagonal)
+            const spacingX = textWidth * 1.5;
+            const spacingY = textHeight * 3;
+
+            // Tile watermarks across entire image
             ctx.save();
             ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.rotate(-Math.PI / 4);
-            ctx.fillText('TFC MEDIA', 0, 0);
+            ctx.rotate(-Math.PI / 6); // 30 degree angle
+
+            // Calculate how many watermarks we need to cover the image
+            const diagonal = Math.sqrt(canvas.width ** 2 + canvas.height ** 2);
+            const cols = Math.ceil(diagonal / spacingX) + 2;
+            const rows = Math.ceil(diagonal / spacingY) + 2;
+
+            // Draw tiled watermarks
+            for (let row = -rows; row < rows; row++) {
+                for (let col = -cols; col < cols; col++) {
+                    const x = col * spacingX;
+                    const y = row * spacingY;
+                    ctx.fillText(watermarkText, x, y);
+                }
+            }
+
             ctx.restore();
 
             // Convert to blob
