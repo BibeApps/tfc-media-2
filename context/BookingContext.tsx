@@ -52,6 +52,8 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
                 serviceType: b.service_type,
                 date: b.booking_date,
                 time: b.booking_time,
+                endTime: b.end_time,
+                phone: b.phone,
                 status: b.status,
                 notes: b.notes
             })));
@@ -84,15 +86,24 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
         setBookings([...bookings, { ...booking, id: Math.random().toString(), status: 'confirmed' }]);
         return;
     }
-    await supabase.from('bookings').insert({
+    const { data, error } = await supabase.from('bookings').insert({
         client_name: booking.clientName,
         client_email: booking.clientEmail,
         service_type: booking.serviceType,
         booking_date: booking.date,
         booking_time: booking.time,
+        end_time: booking.endTime,
+        phone: booking.phone,
         notes: booking.notes,
         status: 'confirmed'
     });
+    
+    if (error) {
+        console.error('Error saving booking:', error);
+        alert(`Failed to save booking: ${error.message}. Please contact support.`);
+        throw error;
+    }
+    
     fetchData();
   };
 
@@ -155,19 +166,54 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const isSlotAvailable = (date: string, time: string) => {
+  // Helper function to convert 12-hour time (e.g., "12:00 PM") to minutes since midnight
+  const timeToMinutes = (time: string): number => {
+    const match = time.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!match) return 0;
+    
+    let hours = parseInt(match[1]);
+    const minutes = parseInt(match[2]);
+    const period = match[3].toUpperCase();
+    
+    // Convert to 24-hour format
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    
+    return hours * 60 + minutes;
+  };
+
     const dayBlackouts = blackouts.filter(b => b.date === date);
     if (dayBlackouts.some(b => b.isFullDay)) return false;
 
     const isBlackedOut = dayBlackouts.some(b => {
         if (!b.isFullDay && b.startTime && b.endTime) {
-            return time >= b.startTime && time < b.endTime;
+            const slotMinutes = timeToMinutes(time);
+            const startMinutes = timeToMinutes(b.startTime);
+            const endMinutes = timeToMinutes(b.endTime);
+            return slotMinutes >= startMinutes && slotMinutes <= endMinutes;
         }
         return false;
     });
     if (isBlackedOut) return false;
 
-    const existing = bookings.find(b => b.date === date && b.time === time && b.status === 'confirmed');
-    if (existing) return false;
+    // Check if this time falls within any existing booking's time range
+    const dayBookings = bookings.filter(b => b.date === date && b.status === 'confirmed');
+    const isBooked = dayBookings.some(b => {
+        // Full day bookings block the entire day
+        if (b.time === 'Full Day' || b.endTime === 'Full Day') {
+            return true;
+        }
+        
+        if (b.time && b.endTime) {
+            const slotMinutes = timeToMinutes(time);
+            const startMinutes = timeToMinutes(b.time);
+            const endMinutes = timeToMinutes(b.endTime);
+            return slotMinutes >= startMinutes && slotMinutes <= endMinutes;
+        }
+        // Fallback for bookings without endTime (legacy)
+        return b.time === time;
+    });
+    if (isBooked) return false;
 
     return true;
   };

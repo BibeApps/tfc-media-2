@@ -229,9 +229,12 @@ export interface Booking {
   date: string; // YYYY-MM-DD
   bookingDate?: string; // DB field name
   booking_date?: string; // DB field name
-  time: string; // HH:MM (24h)
+  time: string; // Start time in 12-hour format (e.g., "10:00 AM")
   bookingTime?: string; // DB field name
   booking_time?: string; // DB field name
+  endTime?: string; // End time in 12-hour format (e.g., "02:00 PM")
+  end_time?: string; // DB field name
+  phone?: string; // Optional phone number
   status: BookingStatus;
   notes?: string;
   created_at?: string;

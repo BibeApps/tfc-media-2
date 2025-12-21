@@ -16,6 +16,12 @@ const Navbar: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  
+  const handleNavClick = (path: string) => {
+    if (location.pathname === path) {
+      window.location.reload();
+    }
+  };
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -54,6 +60,7 @@ const Navbar: React.FC = () => {
                 <NavLink
                   key={link.name}
                   to={link.path}
+                  onClick={() => handleNavClick(link.path)}
                   className={({ isActive: linkActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isActive(link.path) ? 'text-electric bg-electric/10' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}
                 >
                   {link.name}
@@ -118,7 +125,10 @@ const Navbar: React.FC = () => {
                 <NavLink
                   key={link.name}
                   to={link.path}
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={() => {
+                    handleNavClick(link.path);
+                    setIsMenuOpen(false);
+                  }}
                   className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium ${isActive ? 'text-electric bg-electric/10' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-black/20'}`}
                 >
                   {link.name}
