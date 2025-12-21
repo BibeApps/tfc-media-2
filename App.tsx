@@ -32,6 +32,10 @@ import Orders from './pages/admin/Orders';
 import BlackoutDates from './pages/admin/BlackoutDates';
 import AdminHome from './pages/admin/AdminHome';
 import GalleryManager from './pages/admin/GalleryManager';
+import Clients from './pages/admin/Clients';
+import Team from './pages/admin/Team';
+import PortfolioAdmin from './pages/admin/PortfolioAdmin';
+import NotificationSettings from './pages/admin/NotificationSettings';
 import AdminLayout from './components/AdminLayout';
 import { CartProvider } from './context/CartContext';
 import { GalleryProvider } from './context/GalleryContext';
@@ -119,6 +123,10 @@ function App() {
                           <Route path="gallery-upload" element={<GalleryUpload />} />
                           <Route path="orders" element={<Orders />} />
                           <Route path="blackout-dates" element={<BlackoutDates />} />
+                          <Route path="clients" element={<Clients />} />
+                          <Route path="team" element={<Team />} />
+                          <Route path="portfolio" element={<PortfolioAdmin />} />
+                          <Route path="notifications" element={<NotificationSettings />} />
                         </Route>
 
                         {/* Client Portal Routes - Protected */}
