@@ -32,6 +32,7 @@ import Orders from './pages/admin/Orders';
 import BlackoutDates from './pages/admin/BlackoutDates';
 import AdminHome from './pages/admin/AdminHome';
 import GalleryManager from './pages/admin/GalleryManager';
+import AdminLayout from './components/AdminLayout';
 import { CartProvider } from './context/CartContext';
 import { GalleryProvider } from './context/GalleryContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -93,63 +94,23 @@ function App() {
                         <Route path="forgot-password" element={<ForgotPassword />} />
                         <Route path="reset-password" element={<ResetPassword />} />
 
-                        {/* Admin Routes - Protected */}
+                        {/* Admin Routes - Protected with Layout */}
                         <Route
                           path="admin"
                           element={
                             <ProtectedRoute allowedRoles={['admin']}>
-                              <AdminHome />
+                              <AdminLayout />
                             </ProtectedRoute>
                           }
-                        />
-                        <Route
-                          path="admin/gallery"
-                          element={
-                            <ProtectedRoute allowedRoles={['admin']}>
-                              <GalleryManager />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="admin/bookings"
-                          element={
-                            <ProtectedRoute allowedRoles={['admin']}>
-                              <Bookings />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="admin/sessions"
-                          element={
-                            <ProtectedRoute allowedRoles={['admin']}>
-                              <Sessions />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="admin/gallery-upload"
-                          element={
-                            <ProtectedRoute allowedRoles={['admin']}>
-                              <GalleryUpload />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="admin/orders"
-                          element={
-                            <ProtectedRoute allowedRoles={['admin']}>
-                              <Orders />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="admin/blackout-dates"
-                          element={
-                            <ProtectedRoute allowedRoles={['admin']}>
-                              <BlackoutDates />
-                            </ProtectedRoute>
-                          }
-                        />
+                        >
+                          <Route index element={<AdminHome />} />
+                          <Route path="gallery" element={<GalleryManager />} />
+                          <Route path="bookings" element={<Bookings />} />
+                          <Route path="sessions" element={<Sessions />} />
+                          <Route path="gallery-upload" element={<GalleryUpload />} />
+                          <Route path="orders" element={<Orders />} />
+                          <Route path="blackout-dates" element={<BlackoutDates />} />
+                        </Route>
 
                         {/* Client Portal Routes - Protected */}
                         <Route
