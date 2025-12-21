@@ -216,7 +216,7 @@ export interface DownloadItem {
 }
 
 // Calendar & Booking Management Types
-export type BookingStatus = 'confirmed' | 'cancelled' | 'pending';
+export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
 
 export interface Booking {
   id: string;
