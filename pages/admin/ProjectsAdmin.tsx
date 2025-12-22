@@ -4,8 +4,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import { PortalProject, ProjectStatus } from '../../types';
 
+interface ServiceType {
+    id: string;
+    name: string;
+    is_active: boolean;
+}
+
+const PROJECT_STEPS = ['Planning', 'Editing', 'Reviewing', 'Finalizing'];
+
 const ProjectsAdmin: React.FC = () => {
     const [projects, setProjects] = useState<PortalProject[]>([]);
+    const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [selectedProject, setSelectedProject] = useState<PortalProject | null>(null);
@@ -16,7 +25,23 @@ const ProjectsAdmin: React.FC = () => {
 
     useEffect(() => {
         fetchProjects();
+        fetchServiceTypes();
     }, []);
+
+    const fetchServiceTypes = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('service_types')
+                .select('id, name, is_active')
+                .eq('is_active', true)
+                .order('display_order');
+
+            if (error) throw error;
+            setServiceTypes(data || []);
+        } catch (err) {
+            console.error('Error fetching service types:', err);
+        }
+    };
 
     const fetchProjects = async () => {
         try {
@@ -519,13 +544,18 @@ const ProjectsAdmin: React.FC = () => {
                                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                             Service Type
                                         </label>
-                                        <input
-                                            type="text"
+                                        <select
                                             value={formData.serviceType || ''}
                                             onChange={(e) => setFormData({ ...formData, serviceType: e.target.value })}
-                                            placeholder="Photography, Videography"
                                             className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white"
-                                        />
+                                        >
+                                            <option value="">Select a service type</option>
+                                            {serviceTypes.map((service) => (
+                                                <option key={service.id} value={service.name}>
+                                                    {service.name}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
 
                                     <div>
@@ -577,13 +607,18 @@ const ProjectsAdmin: React.FC = () => {
                                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                         Current Step
                                     </label>
-                                    <input
-                                        type="text"
+                                    <select
                                         value={formData.currentStep || ''}
                                         onChange={(e) => setFormData({ ...formData, currentStep: e.target.value })}
-                                        placeholder="Planning, Shooting, Editing, etc."
                                         className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white"
-                                    />
+                                    >
+                                        <option value="">Select current step</option>
+                                        {PROJECT_STEPS.map((step) => (
+                                            <option key={step} value={step}>
+                                                {step}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
