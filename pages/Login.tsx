@@ -8,7 +8,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated, user } = useAuth();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,8 +18,8 @@ const Login: React.FC = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated && user) {
-        if (user.role === 'admin') navigate('/admin');
-        else navigate('/portal');
+      if (user.role === 'admin') navigate('/admin');
+      else navigate('/portal');
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -31,9 +31,19 @@ const Login: React.FC = () => {
     try {
       const result = await login(email, password);
       if (result.success) {
-        // Navigation is handled by the useEffect above or explicit logic here
-        // We let the auth state update trigger the redirect naturally, 
-        // but explicit redirect ensures better UX for role handling immediately
+        // Check if user needs to change password (first-time login)
+        if (result.requiresPasswordChange) {
+          // Redirect to settings/password page based on role
+          // We need to wait for user state to update to get the role
+          setTimeout(() => {
+            if (user?.role === 'admin') {
+              navigate('/portal/settings?tab=password&firstLogin=true');
+            } else {
+              navigate('/portal/settings?tab=password&firstLogin=true');
+            }
+          }, 100);
+        }
+        // Otherwise, navigation is handled by the useEffect above
       } else {
         setError(result.message || 'Login failed');
       }
@@ -46,7 +56,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen py-24 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-obsidian transition-colors duration-300">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-md w-full space-y-8 bg-white dark:bg-charcoal p-8 rounded-2xl border border-gray-200 dark:border-white/5 shadow-xl"
@@ -62,19 +72,19 @@ const Login: React.FC = () => {
         </div>
 
         {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 p-4 rounded-lg flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-            </div>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 p-4 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          </div>
         )}
 
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 p-4 rounded-lg flex items-start gap-3">
-            <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-700 dark:text-blue-300">
-                <p className="font-bold mb-1">Demo Credentials:</p>
-                <p>Admin: <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">admin@tfcmedia.com</span> / <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">admin</span></p>
-                <p>Client: <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">alex.doe@example.com</span> / <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">client</span></p>
-            </div>
+          <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-700 dark:text-blue-300">
+            <p className="font-bold mb-1">Demo Credentials:</p>
+            <p>Admin: <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">admin@tfcmedia.com</span> / <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">admin</span></p>
+            <p>Client: <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">alex.doe@example.com</span> / <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">client</span></p>
+          </div>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
@@ -165,17 +175,13 @@ const Login: React.FC = () => {
               )}
             </button>
             <Link
-                to="/"
-                className="w-full flex justify-center py-3 px-4 border border-gray-300 dark:border-white/10 text-sm font-bold rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              to="/"
+              className="w-full flex justify-center py-3 px-4 border border-gray-300 dark:border-white/10 text-sm font-bold rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
             >
-                Cancel
+              Cancel
             </Link>
           </div>
         </form>
-        
-        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-          Don't have an account? <Link to="/signup" className="font-bold text-electric hover:underline">Sign up</Link> to create your profile.
-        </div>
       </motion.div>
     </div>
   );

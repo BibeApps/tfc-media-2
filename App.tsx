@@ -12,7 +12,6 @@ import Licensing from './pages/Licensing';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import Login from './pages/Login';
-import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import AboutUs from './pages/AboutUs';
@@ -96,7 +95,6 @@ function App() {
                         <Route path="privacy" element={<PrivacyPolicy />} />
                         <Route path="terms" element={<TermsOfService />} />
                         <Route path="login" element={<Login />} />
-                        <Route path="signup" element={<Signup />} />
                         <Route path="forgot-password" element={<ForgotPassword />} />
                         <Route path="reset-password" element={<ResetPassword />} />
 
@@ -126,7 +124,7 @@ function App() {
                           <Route path="gallery-upload" element={<GalleryUpload />} />
                           <Route path="orders" element={<Orders />} />
                           <Route path="blackout-dates" element={<BlackoutDates />} />
-              <Route path="service-types" element={<ServiceTypes />} />
+                          <Route path="service-types" element={<ServiceTypes />} />
                           <Route path="clients" element={<Clients />} />
                           <Route path="team" element={<Team />} />
                           <Route path="portfolio" element={<PortfolioAdmin />} />
