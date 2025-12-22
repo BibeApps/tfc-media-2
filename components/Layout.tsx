@@ -16,7 +16,7 @@ const Navbar: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const handleNavClick = (path: string) => {
     if (location.pathname === path) {
       window.location.reload();
@@ -48,9 +48,9 @@ const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-20">
           <Link to="/" className="flex-shrink-0 flex items-center gap-2 cursor-pointer">
             <img
-              src="/TFC_Media_Logo.png"
+              src="/assets/images/tfc-logo.png"
               alt="TFC Media"
-              className="h-12 w-auto object-contain bg-obsidian p-1 rounded-lg"
+              className="h-48 w-auto object-contain hover:scale-105 transition-transform duration-200"
             />
           </Link>
 
@@ -333,9 +333,12 @@ const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="col-span-1 md:col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-6">
-              <img src="/TFC_Media_Logo.png" alt="TFC Media" className="h-10 w-auto bg-white/10 p-1 rounded" />
-              <span className="text-2xl font-heading font-bold">TFC MEDIA</span>
+            <Link to="/" className="flex items-center gap-3 mb-6 group">
+              <img
+                src="/assets/images/tfc-logo.png"
+                alt="TFC Media"
+                className="h-56 w-auto object-contain group-hover:scale-105 transition-transform duration-200"
+              />
             </Link>
             <p className="text-gray-400 max-w-sm leading-relaxed mb-6">
               Professional photography, videography, and digital media services tailored to your unique vision. Capturing moments, creating legacies.
