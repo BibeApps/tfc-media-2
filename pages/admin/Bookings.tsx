@@ -332,11 +332,11 @@ const Bookings: React.FC = () => {
                                         <div className="space-y-1">
                                             <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Update Status</label>
                                             <select
-                                                value={booking.status}
+                                                value={booking.status || 'pending'}
                                                 onChange={(e) => updateBookingStatus(booking.id, e.target.value as BookingStatus)}
                                                 className="w-full px-3 py-2 bg-white dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg text-sm font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-electric focus:border-transparent outline-none"
                                             >
-                                                {booking.status === 'pending' && (
+                                                {(booking.status === 'pending' || !booking.status) && (
                                                     <>
                                                         <option value="pending">Pending</option>
                                                         <option value="confirmed">Confirm</option>
