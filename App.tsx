@@ -36,6 +36,7 @@ import GalleryEdit from './pages/admin/GalleryEdit';
 import Clients from './pages/admin/Clients';
 import Team from './pages/admin/Team';
 import PortfolioAdmin from './pages/admin/PortfolioAdmin';
+import ProjectsAdmin from './pages/admin/ProjectsAdmin';
 import NotificationSettings from './pages/admin/NotificationSettings';
 import AdminLayout from './components/AdminLayout';
 import { CartProvider } from './context/CartContext';
@@ -126,6 +127,7 @@ function App() {
                           <Route path="blackout-dates" element={<BlackoutDates />} />
                           <Route path="service-types" element={<ServiceTypes />} />
                           <Route path="clients" element={<Clients />} />
+                          <Route path="projects" element={<ProjectsAdmin />} />
                           <Route path="team" element={<Team />} />
                           <Route path="portfolio" element={<PortfolioAdmin />} />
                           <Route path="notifications" element={<NotificationSettings />} />
