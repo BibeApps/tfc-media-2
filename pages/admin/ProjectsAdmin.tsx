@@ -165,6 +165,21 @@ const ProjectsAdmin: React.FC = () => {
             };
 
             if (selectedProject) {
+                // Updating existing project - detect changes
+                const updates: any = {};
+
+                if (selectedProject.status !== formData.status) {
+                    updates.status = { old: selectedProject.status, new: formData.status };
+                }
+
+                if (selectedProject.progress !== formData.progress) {
+                    updates.progress = { old: selectedProject.progress, new: formData.progress };
+                }
+
+                if (selectedProject.currentStep !== formData.currentStep) {
+                    updates.currentStep = { old: selectedProject.currentStep, new: formData.currentStep };
+                }
+
                 const { error } = await supabase
                     .from('portal_projects')
                     .update(dataToSave)
@@ -173,6 +188,31 @@ const ProjectsAdmin: React.FC = () => {
                 if (error) {
                     console.error('Supabase error:', error);
                     throw error;
+                }
+
+                // Send update email if there are changes
+                if (Object.keys(updates).length > 0) {
+                    try {
+                        const portalUrl = `${window.location.origin}/portal`;
+
+                        const { error: emailError } = await supabase.functions.invoke('send-project-update-email', {
+                            body: {
+                                clientName: formData.clientName,
+                                clientEmail: formData.clientEmail,
+                                projectName: formData.name,
+                                updates: updates,
+                                portalUrl: portalUrl,
+                            },
+                        });
+
+                        if (emailError) {
+                            console.error('Error sending project update email:', emailError);
+                            // Don't fail the whole operation if email fails
+                        }
+                    } catch (emailErr) {
+                        console.error('Failed to send project update email:', emailErr);
+                        // Continue even if email fails
+                    }
                 }
             } else {
                 // Creating new project
