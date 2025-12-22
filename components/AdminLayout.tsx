@@ -36,6 +36,7 @@ const AdminLayout: React.FC = () => {
         { path: '/admin/blackout-dates', icon: Ban, label: 'Blackout Dates' },
         { path: '/admin/service-types', icon: Briefcase, label: 'Service Types' },
         { path: '/admin/clients', icon: Users, label: 'Clients' },
+        { path: '/admin/projects', icon: Briefcase, label: 'Projects' },
         { path: '/admin/portfolio', icon: Image, label: 'Portfolio' },
         { path: '/admin/team', icon: UserCircle, label: 'Team' },
         { path: '/admin/notifications', icon: Bell, label: 'Notifications' },

@@ -75,6 +75,13 @@ const AdminHome: React.FC = () => {
             color: 'from-indigo-500 to-purple-500',
         },
         {
+            title: 'Projects',
+            description: 'Manage client deliverables',
+            icon: FileText,
+            path: '/admin/projects',
+            color: 'from-orange-500 to-amber-500',
+        },
+        {
             title: 'Portfolio',
             description: 'Update your portfolio content',
             icon: Image,
