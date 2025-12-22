@@ -37,7 +37,7 @@ const AdminHome: React.FC = () => {
             description: 'Manage gallery names and types',
             icon: Edit,
             path: '/admin/gallery-edit',
-            color: 'from-pink-500 to-rose-500', 
+            color: 'from-pink-500 to-rose-500',
         },
         {
             title: 'Bookings',
@@ -75,13 +75,6 @@ const AdminHome: React.FC = () => {
             color: 'from-indigo-500 to-purple-500',
         },
         {
-            title: 'Projects',
-            description: 'Manage client deliverables',
-            icon: FileText,
-            path: '/admin/projects',
-            color: 'from-orange-500 to-amber-500',
-        },
-        {
             title: 'Portfolio',
             description: 'Update your portfolio content',
             icon: Image,
@@ -116,12 +109,12 @@ const AdminHome: React.FC = () => {
             <div className="max-w-7xl mx-auto">
                 <div className="mb-12">
                     <div className="bg-gradient-to-r from-electric to-blue-600 rounded-2xl p-8 text-white shadow-xl shadow-electric/20 mb-8">
-                         <h1 className="text-3xl font-bold mb-2">
-                           Welcome Back, {user?.name || 'Admin'}!
-                         </h1>
-                         <p className="text-blue-100 text-lg">
-                           Here's what's happening with your business today
-                         </p>
+                        <h1 className="text-3xl font-bold mb-2">
+                            Welcome Back, {user?.name || 'Admin'}!
+                        </h1>
+                        <p className="text-blue-100 text-lg">
+                            Here's what's happening with your business today
+                        </p>
                     </div>
                 </div>
 
