@@ -312,7 +312,14 @@ const Bookings: React.FC = () => {
                                         </div>
                                         <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                                             <Clock className="w-4 h-4" />
-                                            <span>{booking.time}</span>
+                                            <span>
+                                                {booking.time === 'Full Day' || booking.endTime === 'Full Day'
+                                                    ? 'Full Day'
+                                                    : booking.endTime
+                                                        ? `${booking.time} - ${booking.endTime}`
+                                                        : booking.time
+                                                }
+                                            </span>
                                         </div>
                                     </div>
 
