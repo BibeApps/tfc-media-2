@@ -110,6 +110,7 @@ const Portfolio: React.FC = () => {
     const [uploading, setUploading] = useState(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [dragActive, setDragActive] = useState(false);
+    const [tagsInput, setTagsInput] = useState('');
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -183,6 +184,7 @@ const Portfolio: React.FC = () => {
             category: '',
             tags: [],
         });
+        setTagsInput('');
         setImagePreview(null);
         setIsEditing(true);
     };
@@ -190,6 +192,7 @@ const Portfolio: React.FC = () => {
     const handleEdit = (project: PortfolioProject) => {
         setSelectedProject(project);
         setFormData(project);
+        setTagsInput(project.tags?.join(', ') || '');
         setImagePreview(project.image_url);
         setIsEditing(true);
     };
@@ -262,6 +265,16 @@ const Portfolio: React.FC = () => {
         }
     };
 
+    const handleTagsChange = (value: string) => {
+        setTagsInput(value);
+        // Parse tags: split by comma, trim whitespace, filter empty strings
+        const parsedTags = value
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0);
+        setFormData({ ...formData, tags: parsedTags });
+    };
+
     const handleSave = async () => {
         if (!formData.title || !formData.description) {
             alert('Please fill in title and description');
@@ -306,6 +319,7 @@ const Portfolio: React.FC = () => {
             await fetchProjects();
             setIsEditing(false);
             setImagePreview(null);
+            setTagsInput('');
         } catch (err: any) {
             console.error('Error saving portfolio item:', err);
             const errorMessage = err.message || 'Unknown error';
@@ -512,11 +526,20 @@ const Portfolio: React.FC = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.tags?.join(', ') || ''}
-                                        onChange={(e) => setFormData({ ...formData, tags: e.target.value.split(',').map(t => t.trim()).filter(t => t) })}
+                                        value={tagsInput}
+                                        onChange={(e) => handleTagsChange(e.target.value)}
                                         placeholder="photography, wedding, outdoor"
                                         className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white"
                                     />
+                                    {formData.tags && formData.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {formData.tags.map((tag, idx) => (
+                                                <span key={idx} className="px-2 py-1 bg-electric/10 text-electric rounded text-xs">
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
