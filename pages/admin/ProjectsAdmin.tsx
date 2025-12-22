@@ -175,6 +175,7 @@ const ProjectsAdmin: React.FC = () => {
                     throw error;
                 }
             } else {
+                // Creating new project
                 const { error } = await supabase
                     .from('portal_projects')
                     .insert([dataToSave]);
@@ -182,6 +183,30 @@ const ProjectsAdmin: React.FC = () => {
                 if (error) {
                     console.error('Supabase error:', error);
                     throw error;
+                }
+
+                // Send email notification to client
+                try {
+                    const portalUrl = `${window.location.origin}/portal`;
+
+                    const { error: emailError } = await supabase.functions.invoke('send-project-email', {
+                        body: {
+                            clientName: formData.clientName,
+                            clientEmail: formData.clientEmail,
+                            projectName: formData.name,
+                            serviceType: formData.serviceType || '',
+                            eventDate: formData.eventDate || '',
+                            portalUrl: portalUrl,
+                        },
+                    });
+
+                    if (emailError) {
+                        console.error('Error sending project email:', emailError);
+                        // Don't fail the whole operation if email fails
+                    }
+                } catch (emailErr) {
+                    console.error('Failed to send project notification email:', emailErr);
+                    // Continue even if email fails
                 }
             }
 
