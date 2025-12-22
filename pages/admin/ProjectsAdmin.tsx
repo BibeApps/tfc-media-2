@@ -98,7 +98,7 @@ const ProjectsAdmin: React.FC = () => {
 
             const fileExt = file.name.split('.').pop();
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-            const filePath = `projects/${fileName}`;
+            const filePath = `project-covers/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
                 .from('thumbnails')
@@ -357,8 +357,8 @@ const ProjectsAdmin: React.FC = () => {
                                         onDragOver={handleDrag}
                                         onDrop={handleDrop}
                                         className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${dragActive
-                                                ? 'border-electric bg-electric/5'
-                                                : 'border-gray-300 dark:border-white/20'
+                                            ? 'border-electric bg-electric/5'
+                                            : 'border-gray-300 dark:border-white/20'
                                             }`}
                                     >
                                         {imagePreview ? (
