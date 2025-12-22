@@ -197,7 +197,12 @@ const AboutUs: React.FC = () => {
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </div>
                                 <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-1">{member.name}</h3>
-                                <p className="text-electric font-medium">{member.title}</p>
+                                <p className="text-electric font-medium mb-2">{member.title}</p>
+                                {member.bio && (
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed line-clamp-3">
+                                        {member.bio}
+                                    </p>
+                                )}
                             </motion.div>
                         ))}
                     </div>

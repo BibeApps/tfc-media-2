@@ -269,6 +269,7 @@ export interface TeamMember {
   id: string;
   name: string;
   title: string;
+  bio?: string;
   image_url: string;
   display_order: number;
   created_at: string;
