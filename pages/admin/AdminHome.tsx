@@ -96,13 +96,6 @@ const AdminHome: React.FC = () => {
             color: 'from-teal-500 to-emerald-500',
         },
         {
-            title: 'Notifications',
-            description: 'Configure email and SMS settings',
-            icon: Mail,
-            path: '/admin/notifications',
-            color: 'from-violet-500 to-purple-500',
-        },
-        {
             title: 'Settings',
             description: 'Global system configuration',
             icon: Settings,

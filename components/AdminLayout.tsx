@@ -39,7 +39,6 @@ const AdminLayout: React.FC = () => {
         { path: '/admin/projects', icon: Briefcase, label: 'Projects' },
         { path: '/admin/portfolio', icon: Image, label: 'Portfolio' },
         { path: '/admin/team', icon: UserCircle, label: 'Team' },
-        { path: '/admin/notifications', icon: Bell, label: 'Notifications' },
         { path: '/admin/settings', icon: Settings, label: 'Settings' },
     ];
 
