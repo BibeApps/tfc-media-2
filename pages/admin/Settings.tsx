@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Loader2, Building2, Globe, Clock, Mail, MessageSquare, Bell, Upload, Image as ImageIcon, X } from 'lucide-react';
+import { Save, Loader2, Building2, Globe, Clock, Mail, MessageSquare, Bell, Upload, Image as ImageIcon, X, Calendar, CreditCard, Image } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import { formatPhoneNumber } from '../../utils/phoneFormatter';
@@ -20,6 +20,38 @@ interface SiteSettings {
     twitter_url: string | null;
     linkedin_url: string | null;
     business_hours: any;
+
+    // Booking Settings
+    default_booking_duration: number;
+    booking_buffer_time: number;
+    advance_booking_limit: number;
+    cancellation_policy: string | null;
+    deposit_percentage: number;
+    auto_confirm_bookings: boolean;
+    send_booking_reminders: boolean;
+    reminder_24h: boolean;
+    reminder_1week: boolean;
+
+    // Payment Settings
+    stripe_publishable_key: string | null;
+    stripe_secret_key: string | null;
+    stripe_test_mode: boolean;
+    currency: string;
+    tax_rate: number;
+    convenience_fee_rate: number;
+    accept_credit_cards: boolean;
+    accept_paypal: boolean;
+    accept_deposits: boolean;
+    refund_policy: string | null;
+
+    // Gallery Settings
+    max_file_size_mb: number;
+    allowed_file_types: string[];
+    image_quality: number;
+    auto_generate_thumbnails: boolean;
+    enable_watermark: boolean;
+    watermark_text: string | null;
+    watermark_opacity: number;
 }
 
 interface NotificationSettings {
@@ -40,7 +72,7 @@ interface NotificationSettings {
     };
 }
 
-type TabType = 'general' | 'notifications';
+type TabType = 'general' | 'notifications' | 'booking' | 'payment' | 'gallery';
 
 const TIMEZONES = [
     'America/New_York',
@@ -98,6 +130,38 @@ const Settings: React.FC = () => {
                     twitter_url: null,
                     linkedin_url: null,
                     business_hours: {},
+
+                    // Booking defaults
+                    default_booking_duration: 120,
+                    booking_buffer_time: 30,
+                    advance_booking_limit: 90,
+                    cancellation_policy: null,
+                    deposit_percentage: 25.00,
+                    auto_confirm_bookings: false,
+                    send_booking_reminders: true,
+                    reminder_24h: true,
+                    reminder_1week: true,
+
+                    // Payment defaults
+                    stripe_publishable_key: null,
+                    stripe_secret_key: null,
+                    stripe_test_mode: true,
+                    currency: 'USD',
+                    tax_rate: 0.00,
+                    convenience_fee_rate: 0.00,
+                    accept_credit_cards: true,
+                    accept_paypal: false,
+                    accept_deposits: true,
+                    refund_policy: null,
+
+                    // Gallery defaults
+                    max_file_size_mb: 10,
+                    allowed_file_types: ['jpg', 'jpeg', 'png', 'webp'],
+                    image_quality: 85,
+                    auto_generate_thumbnails: true,
+                    enable_watermark: false,
+                    watermark_text: null,
+                    watermark_opacity: 0.50,
                 });
             }
 
@@ -306,6 +370,36 @@ const Settings: React.FC = () => {
                         <Bell className="w-5 h-5" />
                         Notifications
                     </button>
+                    <button
+                        onClick={() => setActiveTab('booking')}
+                        className={`flex items-center gap-2 px-4 py-3 border-b-2 font-bold transition-colors ${activeTab === 'booking'
+                            ? 'border-electric text-electric'
+                            : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                            }`}
+                    >
+                        <Calendar className="w-5 h-5" />
+                        Booking
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('payment')}
+                        className={`flex items-center gap-2 px-4 py-3 border-b-2 font-bold transition-colors ${activeTab === 'payment'
+                            ? 'border-electric text-electric'
+                            : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                            }`}
+                    >
+                        <CreditCard className="w-5 h-5" />
+                        Payment
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('gallery')}
+                        className={`flex items-center gap-2 px-4 py-3 border-b-2 font-bold transition-colors ${activeTab === 'gallery'
+                            ? 'border-electric text-electric'
+                            : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                            }`}
+                    >
+                        <Image className="w-5 h-5" />
+                        Gallery
+                    </button>
                 </nav>
             </div>
 
@@ -355,8 +449,8 @@ const Settings: React.FC = () => {
                                         onDragOver={handleDrag}
                                         onDrop={handleDrop}
                                         className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${dragActive
-                                                ? 'border-electric bg-electric/5'
-                                                : 'border-gray-300 dark:border-white/20 hover:border-electric'
+                                            ? 'border-electric bg-electric/5'
+                                            : 'border-gray-300 dark:border-white/20 hover:border-electric'
                                             }`}
                                     >
                                         {(logoPreview || siteSettings.company_logo_url) ? (
@@ -747,6 +841,511 @@ const Settings: React.FC = () => {
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'booking' && siteSettings && (
+                    <div className="space-y-6">
+                        {/* General Booking Configuration */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-blue-500/10 rounded-lg">
+                                    <Calendar className="w-6 h-6 text-blue-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Booking Configuration</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Set default booking parameters</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Default Duration (minutes)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="15"
+                                        max="480"
+                                        value={siteSettings.default_booking_duration}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, default_booking_duration: parseInt(e.target.value) || 120 })}
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Buffer Time (minutes)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="120"
+                                        value={siteSettings.booking_buffer_time}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, booking_buffer_time: parseInt(e.target.value) || 0 })}
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Advance Booking Limit (days)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="365"
+                                        value={siteSettings.advance_booking_limit}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, advance_booking_limit: parseInt(e.target.value) || 90 })}
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-4">
+                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                    Deposit Percentage (%)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    value={siteSettings.deposit_percentage}
+                                    onChange={(e) => setSiteSettings({ ...siteSettings, deposit_percentage: parseFloat(e.target.value) || 0 })}
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Policies */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-purple-500/10 rounded-lg">
+                                    <Bell className="w-6 h-6 text-purple-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Policies & Automation</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Configure booking policies</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Cancellation Policy
+                                    </label>
+                                    <textarea
+                                        value={siteSettings.cancellation_policy || ''}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, cancellation_policy: e.target.value })}
+                                        rows={4}
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white resize-none"
+                                        placeholder="Describe your cancellation policy..."
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-obsidian rounded-lg">
+                                    <div>
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Auto-Confirm Bookings</label>
+                                        <p className="text-xs text-gray-500">Automatically confirm new bookings without manual approval</p>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={siteSettings.auto_confirm_bookings}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, auto_confirm_bookings: e.target.checked })}
+                                        className="w-5 h-5 text-electric rounded focus:ring-electric"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Reminders */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-green-500/10 rounded-lg">
+                                    <Mail className="w-6 h-6 text-green-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Booking Reminders</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Configure automatic reminders</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-obsidian rounded-lg">
+                                    <div>
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Enable Reminders</label>
+                                        <p className="text-xs text-gray-500">Send automated booking reminders to clients</p>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={siteSettings.send_booking_reminders}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, send_booking_reminders: e.target.checked })}
+                                        className="w-5 h-5 text-electric rounded focus:ring-electric"
+                                    />
+                                </div>
+
+                                {siteSettings.send_booking_reminders && (
+                                    <div className="pl-4 space-y-3">
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={siteSettings.reminder_24h}
+                                                onChange={(e) => setSiteSettings({ ...siteSettings, reminder_24h: e.target.checked })}
+                                                className="w-4 h-4 text-electric rounded focus:ring-electric"
+                                            />
+                                            <span className="text-sm text-gray-700 dark:text-gray-300">24-hour reminder</span>
+                                        </label>
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={siteSettings.reminder_1week}
+                                                onChange={(e) => setSiteSettings({ ...siteSettings, reminder_1week: e.target.checked })}
+                                                className="w-4 h-4 text-electric rounded focus:ring-electric"
+                                            />
+                                            <span className="text-sm text-gray-700 dark:text-gray-300">1-week reminder</span>
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'payment' && siteSettings && (
+                    <div className="space-y-6">
+                        {/* Stripe Configuration */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-blue-500/10 rounded-lg">
+                                    <CreditCard className="w-6 h-6 text-blue-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Stripe Configuration</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Configure payment processing</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Publishable Key
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={siteSettings.stripe_publishable_key || ''}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, stripe_publishable_key: e.target.value })}
+                                        placeholder="pk_live_..."
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white font-mono text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Secret Key
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={siteSettings.stripe_secret_key || ''}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, stripe_secret_key: e.target.value })}
+                                        placeholder="sk_live_..."
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white font-mono text-sm"
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-obsidian rounded-lg">
+                                    <div>
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Test Mode</label>
+                                        <p className="text-xs text-gray-500">Use Stripe test keys for development</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {siteSettings.stripe_test_mode && (
+                                            <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 text-xs font-bold rounded">TEST</span>
+                                        )}
+                                        <input
+                                            type="checkbox"
+                                            checked={siteSettings.stripe_test_mode}
+                                            onChange={(e) => setSiteSettings({ ...siteSettings, stripe_test_mode: e.target.checked })}
+                                            className="w-5 h-5 text-electric rounded focus:ring-electric"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Pricing Configuration */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-green-500/10 rounded-lg">
+                                    <CreditCard className="w-6 h-6 text-green-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Pricing & Fees</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Configure pricing parameters</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Currency
+                                    </label>
+                                    <select
+                                        value={siteSettings.currency}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, currency: e.target.value })}
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white"
+                                    >
+                                        <option value="USD">USD - US Dollar</option>
+                                        <option value="EUR">EUR - Euro</option>
+                                        <option value="GBP">GBP - British Pound</option>
+                                        <option value="CAD">CAD - Canadian Dollar</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Tax Rate (%)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.01"
+                                        value={siteSettings.tax_rate}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, tax_rate: parseFloat(e.target.value) || 0 })}
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Convenience Fee (%)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.01"
+                                        value={siteSettings.convenience_fee_rate}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, convenience_fee_rate: parseFloat(e.target.value) || 0 })}
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Payment Options */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-purple-500/10 rounded-lg">
+                                    <CreditCard className="w-6 h-6 text-purple-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Payment Options</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Enable payment methods</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-obsidian rounded-lg">
+                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Accept Credit Cards</label>
+                                    <input
+                                        type="checkbox"
+                                        checked={siteSettings.accept_credit_cards}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, accept_credit_cards: e.target.checked })}
+                                        className="w-5 h-5 text-electric rounded focus:ring-electric"
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-obsidian rounded-lg">
+                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Accept PayPal</label>
+                                    <input
+                                        type="checkbox"
+                                        checked={siteSettings.accept_paypal}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, accept_paypal: e.target.checked })}
+                                        className="w-5 h-5 text-electric rounded focus:ring-electric"
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-obsidian rounded-lg">
+                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Accept Deposits</label>
+                                    <input
+                                        type="checkbox"
+                                        checked={siteSettings.accept_deposits}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, accept_deposits: e.target.checked })}
+                                        className="w-5 h-5 text-electric rounded focus:ring-electric"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Refund Policy */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-orange-500/10 rounded-lg">
+                                    <Bell className="w-6 h-6 text-orange-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Refund Policy</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Define your refund terms</p>
+                                </div>
+                            </div>
+
+                            <textarea
+                                value={siteSettings.refund_policy || ''}
+                                onChange={(e) => setSiteSettings({ ...siteSettings, refund_policy: e.target.value })}
+                                rows={4}
+                                className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white resize-none"
+                                placeholder="Describe your refund policy..."
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'gallery' && siteSettings && (
+                    <div className="space-y-6">
+                        {/* Upload Limits */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-blue-500/10 rounded-lg">
+                                    <Upload className="w-6 h-6 text-blue-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Upload Limits</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Configure file upload restrictions</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Max File Size (MB): {siteSettings.max_file_size_mb}
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="50"
+                                        value={siteSettings.max_file_size_mb}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, max_file_size_mb: parseInt(e.target.value) })}
+                                        className="w-full"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                                        Allowed File Types
+                                    </label>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].map((type) => (
+                                            <label key={type} className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-obsidian rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-obsidian/80">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={siteSettings.allowed_file_types.includes(type)}
+                                                    onChange={(e) => {
+                                                        const types = e.target.checked
+                                                            ? [...siteSettings.allowed_file_types, type]
+                                                            : siteSettings.allowed_file_types.filter(t => t !== type);
+                                                        setSiteSettings({ ...siteSettings, allowed_file_types: types });
+                                                    }}
+                                                    className="w-4 h-4 text-electric rounded focus:ring-electric"
+                                                />
+                                                <span className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{type}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Image Processing */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-green-500/10 rounded-lg">
+                                    <Image className="w-6 h-6 text-green-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Image Processing</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Configure image optimization</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Image Quality: {siteSettings.image_quality}%
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={siteSettings.image_quality}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, image_quality: parseInt(e.target.value) })}
+                                        className="w-full"
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-obsidian rounded-lg">
+                                    <div>
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Auto-Generate Thumbnails</label>
+                                        <p className="text-xs text-gray-500">Automatically create thumbnail versions</p>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={siteSettings.auto_generate_thumbnails}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, auto_generate_thumbnails: e.target.checked })}
+                                        className="w-5 h-5 text-electric rounded focus:ring-electric"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Watermark */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-purple-500/10 rounded-lg">
+                                    <ImageIcon className="w-6 h-6 text-purple-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Watermark Settings</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Add watermark to images</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-obsidian rounded-lg">
+                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Enable Watermark</label>
+                                    <input
+                                        type="checkbox"
+                                        checked={siteSettings.enable_watermark}
+                                        onChange={(e) => setSiteSettings({ ...siteSettings, enable_watermark: e.target.checked })}
+                                        className="w-5 h-5 text-electric rounded focus:ring-electric"
+                                    />
+                                </div>
+
+                                {siteSettings.enable_watermark && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                                Watermark Text
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={siteSettings.watermark_text || ''}
+                                                onChange={(e) => setSiteSettings({ ...siteSettings, watermark_text: e.target.value })}
+                                                placeholder="© TFC Media"
+                                                className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric text-gray-900 dark:text-white"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                                Opacity: {Math.round(siteSettings.watermark_opacity * 100)}%
+                                            </label>
+                                            <input
+                                                type="range"
+                                                min="0"
+                                                max="1"
+                                                step="0.01"
+                                                value={siteSettings.watermark_opacity}
+                                                onChange={(e) => setSiteSettings({ ...siteSettings, watermark_opacity: parseFloat(e.target.value) })}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
