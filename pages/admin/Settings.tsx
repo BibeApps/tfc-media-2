@@ -276,7 +276,8 @@ const Settings: React.FC = () => {
         try {
             setSaving(true);
 
-            if (activeTab === 'general' && siteSettings) {
+            // Save site settings (General, Booking, Payment, Gallery tabs all use siteSettings)
+            if (['general', 'booking', 'payment', 'gallery'].includes(activeTab) && siteSettings) {
                 if (siteSettings.id) {
                     const { error } = await supabase
                         .from('site_settings')
@@ -294,6 +295,7 @@ const Settings: React.FC = () => {
                 }
             }
 
+            // Save notification settings
             if (activeTab === 'notifications' && notificationSettings) {
                 if (notificationSettings.id) {
                     const { error } = await supabase
