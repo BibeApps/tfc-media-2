@@ -278,16 +278,22 @@ const Settings: React.FC = () => {
 
             // Save site settings (General, Booking, Payment, Gallery tabs all use siteSettings)
             if (['general', 'booking', 'payment', 'gallery'].includes(activeTab) && siteSettings) {
-                if (siteSettings.id) {
+                // Check if this is an existing record (has a valid UUID)
+                const isExistingRecord = siteSettings.id && siteSettings.id.length > 0;
+
+                if (isExistingRecord) {
+                    // Update existing record
                     const { error } = await supabase
                         .from('site_settings')
                         .update(siteSettings)
                         .eq('id', siteSettings.id);
                     if (error) throw error;
                 } else {
+                    // Insert new record - remove id field to let database generate it
+                    const { id, ...settingsWithoutId } = siteSettings;
                     const { data, error } = await supabase
                         .from('site_settings')
-                        .insert([siteSettings])
+                        .insert([settingsWithoutId])
                         .select()
                         .single();
                     if (error) throw error;
