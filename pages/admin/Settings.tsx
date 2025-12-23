@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Loader2, Building2, Globe, Clock, Mail, MessageSquare, Bell } from 'lucide-react';
+import { Save, Loader2, Building2, Globe, Clock, Mail, MessageSquare, Bell, Upload, Image as ImageIcon, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import { formatPhoneNumber } from '../../utils/phoneFormatter';
@@ -58,6 +58,9 @@ const Settings: React.FC = () => {
     const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [dragActive, setDragActive] = useState(false);
 
     useEffect(() => {
         fetchSettings();
@@ -132,6 +135,76 @@ const Settings: React.FC = () => {
             console.error('Error fetching settings:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleLogoUpload = async (file: File) => {
+        if (!siteSettings) return;
+
+        try {
+            setUploading(true);
+
+            // Validate file
+            const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please upload a PNG, JPG, or WebP image');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size must be less than 5MB');
+                return;
+            }
+
+            // Create unique filename
+            const fileExt = file.name.split('.').pop();
+            const fileName = `logo-${Date.now()}.${fileExt}`;
+            const filePath = `logos/${fileName}`;
+
+            // Upload to Supabase Storage
+            const { error: uploadError } = await supabase.storage
+                .from('thumbnails')
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (uploadError) throw uploadError;
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('thumbnails')
+                .getPublicUrl(filePath);
+
+            // Update settings
+            setSiteSettings({ ...siteSettings, company_logo_url: publicUrl });
+            setLogoPreview(publicUrl);
+
+        } catch (err) {
+            console.error('Error uploading logo:', err);
+            alert('Failed to upload logo');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleDrag = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === 'dragenter' || e.type === 'dragover') {
+            setDragActive(true);
+        } else if (e.type === 'dragleave') {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleLogoUpload(e.dataTransfer.files[0]);
         }
     };
 
@@ -216,8 +289,8 @@ const Settings: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('general')}
                         className={`flex items-center gap-2 px-4 py-3 border-b-2 font-bold transition-colors ${activeTab === 'general'
-                                ? 'border-electric text-electric'
-                                : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                            ? 'border-electric text-electric'
+                            : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                             }`}
                     >
                         <Building2 className="w-5 h-5" />
@@ -226,8 +299,8 @@ const Settings: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('notifications')}
                         className={`flex items-center gap-2 px-4 py-3 border-b-2 font-bold transition-colors ${activeTab === 'notifications'
-                                ? 'border-electric text-electric'
-                                : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                            ? 'border-electric text-electric'
+                            : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                             }`}
                     >
                         <Bell className="w-5 h-5" />
