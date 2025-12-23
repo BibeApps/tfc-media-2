@@ -344,6 +344,78 @@ const Settings: React.FC = () => {
                                     />
                                 </div>
 
+                                {/* Company Logo Upload */}
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                        Company Logo
+                                    </label>
+                                    <div
+                                        onDragEnter={handleDrag}
+                                        onDragLeave={handleDrag}
+                                        onDragOver={handleDrag}
+                                        onDrop={handleDrop}
+                                        className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${dragActive
+                                                ? 'border-electric bg-electric/5'
+                                                : 'border-gray-300 dark:border-white/20 hover:border-electric'
+                                            }`}
+                                    >
+                                        {(logoPreview || siteSettings.company_logo_url) ? (
+                                            <div className="flex items-center gap-4">
+                                                <img
+                                                    src={logoPreview || siteSettings.company_logo_url || ''}
+                                                    alt="Company Logo"
+                                                    className="w-32 h-32 object-contain rounded-lg border border-gray-200 dark:border-white/10"
+                                                />
+                                                <div className="flex-1">
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                                        Logo uploaded successfully
+                                                    </p>
+                                                    <button
+                                                        onClick={() => {
+                                                            setSiteSettings({ ...siteSettings, company_logo_url: null });
+                                                            setLogoPreview(null);
+                                                        }}
+                                                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                        Remove Logo
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center">
+                                                <div className="flex justify-center mb-3">
+                                                    <div className="p-3 bg-electric/10 rounded-lg">
+                                                        <ImageIcon className="w-8 h-8 text-electric" />
+                                                    </div>
+                                                </div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                                    Drag and drop your logo here, or
+                                                </p>
+                                                <input
+                                                    type="file"
+                                                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                                                    onChange={(e) => {
+                                                        if (e.target.files && e.target.files[0]) {
+                                                            handleLogoUpload(e.target.files[0]);
+                                                        }
+                                                    }}
+                                                    className="hidden"
+                                                    id="logo-upload"
+                                                />
+                                                <label
+                                                    htmlFor="logo-upload"
+                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold cursor-pointer transition-colors"
+                                                >
+                                                    <Upload className="w-4 h-4" />
+                                                    {uploading ? 'Uploading...' : 'Choose File'}
+                                                </label>
+                                                <p className="text-xs text-gray-500 mt-2">PNG, JPG, WebP up to 5MB</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
