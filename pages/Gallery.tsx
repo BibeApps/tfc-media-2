@@ -387,7 +387,6 @@ const Gallery: React.FC = () => {
 
                       {/* Hover Actions */}
                       <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4 text-center">
-                        <h4 className="font-bold text-white line-clamp-2 text-sm">{item.title}</h4>
                         {item.tags && item.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 justify-center max-h-12 overflow-hidden">
                             {item.tags.slice(0, 3).map(tag => (
