@@ -52,7 +52,7 @@ interface GalleryItem {
 }
 
 const Gallery: React.FC = () => {
-  const { addToCart } = useCart();
+  const { addItem } = useCart();
   const [loading, setLoading] = useState(true);
   const [viewState, setViewState] = useState<ViewState>(ViewState.TYPES);
 
@@ -175,13 +175,20 @@ const Gallery: React.FC = () => {
     }
   };
 
-  const handleAddToCart = (item: GalleryItem) => {
-    addToCart({
+  const handleAddToCart = async (item: GalleryItem) => {
+    await addItem({
       id: item.id,
       title: item.title,
       price: item.price,
-      type: 'gallery_item',
-      imageUrl: item.watermarked_url,
+      type: item.type,
+      url: item.watermarked_url,
+      watermarked_url: item.watermarked_url,
+      original_url: item.original_url,
+      width: item.width,
+      height: item.height,
+      description: item.description,
+      tags: item.tags,
+      session_id: item.session_id,
     });
   };
 

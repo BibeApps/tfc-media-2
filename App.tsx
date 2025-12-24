@@ -47,6 +47,7 @@ import { ProjectProvider } from './context/ProjectContext';
 import { ClientProvider } from './context/ClientContext';
 import { AuthProvider } from './context/AuthContext';
 import { BookingProvider } from './context/BookingContext';
+import { SettingsProvider } from './context/SettingsContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Custom ScrollToTop component to handle scroll restoration and hash scrolling
@@ -76,91 +77,93 @@ const ScrollToTop = () => {
 function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <GalleryProvider>
-          <CartProvider>
-            <ProjectProvider>
-              <ClientProvider>
-                <BookingProvider>
-                  <HashRouter>
-                    <ScrollToTop />
-                    <Routes>
-                      <Route path="/" element={<Layout />}>
-                        <Route index element={<Home />} />
-                        <Route path="portfolio" element={<Portfolio />} />
-                        <Route path="gallery" element={<Gallery />} />
-                        <Route path="book" element={<Booking />} />
-                        <Route path="services" element={<Services />} />
-                        <Route path="about" element={<AboutUs />} />
-                        <Route path="faq" element={<FAQ />} />
-                        <Route path="licensing" element={<Licensing />} />
-                        <Route path="privacy" element={<PrivacyPolicy />} />
-                        <Route path="terms" element={<TermsOfService />} />
-                        <Route path="login" element={<Login />} />
-                        <Route path="forgot-password" element={<ForgotPassword />} />
-                        <Route path="reset-password" element={<ResetPassword />} />
+      <SettingsProvider>
+        <AuthProvider>
+          <GalleryProvider>
+            <CartProvider>
+              <ProjectProvider>
+                <ClientProvider>
+                  <BookingProvider>
+                    <HashRouter>
+                      <ScrollToTop />
+                      <Routes>
+                        <Route path="/" element={<Layout />}>
+                          <Route index element={<Home />} />
+                          <Route path="portfolio" element={<Portfolio />} />
+                          <Route path="gallery" element={<Gallery />} />
+                          <Route path="book" element={<Booking />} />
+                          <Route path="services" element={<Services />} />
+                          <Route path="about" element={<AboutUs />} />
+                          <Route path="faq" element={<FAQ />} />
+                          <Route path="licensing" element={<Licensing />} />
+                          <Route path="privacy" element={<PrivacyPolicy />} />
+                          <Route path="terms" element={<TermsOfService />} />
+                          <Route path="login" element={<Login />} />
+                          <Route path="forgot-password" element={<ForgotPassword />} />
+                          <Route path="reset-password" element={<ResetPassword />} />
 
-                        {/* Admin Dashboard - No Sidebar */}
-                        <Route
-                          path="admin"
-                          element={
-                            <ProtectedRoute allowedRoles={['admin']}>
-                              <AdminHome />
-                            </ProtectedRoute>
-                          }
-                        />
+                          {/* Admin Dashboard - No Sidebar */}
+                          <Route
+                            path="admin"
+                            element={
+                              <ProtectedRoute allowedRoles={['admin']}>
+                                <AdminHome />
+                              </ProtectedRoute>
+                            }
+                          />
 
-                        {/* Admin Pages - With Sidebar Layout */}
-                        <Route
-                          path="admin"
-                          element={
-                            <ProtectedRoute allowedRoles={['admin']}>
-                              <AdminLayout />
-                            </ProtectedRoute>
-                          }
-                        >
-                          <Route path="gallery" element={<GalleryManagerNew />} />
-                          <Route path="gallery-edit" element={<GalleryEdit />} />
-                          <Route path="bookings" element={<Bookings />} />
-                          <Route path="sessions" element={<Sessions />} />
-                          <Route path="gallery-upload" element={<GalleryUpload />} />
-                          <Route path="orders" element={<Orders />} />
-                          <Route path="blackout-dates" element={<BlackoutDates />} />
-                          <Route path="service-types" element={<ServiceTypes />} />
-                          <Route path="clients" element={<Clients />} />
-                          <Route path="projects" element={<ProjectsAdmin />} />
-                          <Route path="team" element={<Team />} />
-                          <Route path="portfolio" element={<PortfolioAdmin />} />
-                          <Route path="notifications" element={<NotificationSettings />} />
-                          <Route path="settings" element={<AdminSettings />} />
+                          {/* Admin Pages - With Sidebar Layout */}
+                          <Route
+                            path="admin"
+                            element={
+                              <ProtectedRoute allowedRoles={['admin']}>
+                                <AdminLayout />
+                              </ProtectedRoute>
+                            }
+                          >
+                            <Route path="gallery" element={<GalleryManagerNew />} />
+                            <Route path="gallery-edit" element={<GalleryEdit />} />
+                            <Route path="bookings" element={<Bookings />} />
+                            <Route path="sessions" element={<Sessions />} />
+                            <Route path="gallery-upload" element={<GalleryUpload />} />
+                            <Route path="orders" element={<Orders />} />
+                            <Route path="blackout-dates" element={<BlackoutDates />} />
+                            <Route path="service-types" element={<ServiceTypes />} />
+                            <Route path="clients" element={<Clients />} />
+                            <Route path="projects" element={<ProjectsAdmin />} />
+                            <Route path="team" element={<Team />} />
+                            <Route path="portfolio" element={<PortfolioAdmin />} />
+                            <Route path="notifications" element={<NotificationSettings />} />
+                            <Route path="settings" element={<AdminSettings />} />
+                          </Route>
+
+                          {/* Client Portal Routes - Protected */}
+                          <Route
+                            path="portal"
+                            element={
+                              <ProtectedRoute allowedRoles={['client']}>
+                                <PortalLayout />
+                              </ProtectedRoute>
+                            }
+                          >
+                            <Route index element={<Dashboard />} />
+                            <Route path="projects" element={<Projects />} />
+                            <Route path="events" element={<MyEvents />} />
+                            <Route path="bookings" element={<MyBookings />} />
+                            <Route path="purchases" element={<Purchases />} />
+                            <Route path="downloads" element={<Downloads />} />
+                            <Route path="settings" element={<Settings />} />
+                          </Route>
                         </Route>
-
-                        {/* Client Portal Routes - Protected */}
-                        <Route
-                          path="portal"
-                          element={
-                            <ProtectedRoute allowedRoles={['client']}>
-                              <PortalLayout />
-                            </ProtectedRoute>
-                          }
-                        >
-                          <Route index element={<Dashboard />} />
-                          <Route path="projects" element={<Projects />} />
-                          <Route path="events" element={<MyEvents />} />
-                          <Route path="bookings" element={<MyBookings />} />
-                          <Route path="purchases" element={<Purchases />} />
-                          <Route path="downloads" element={<Downloads />} />
-                          <Route path="settings" element={<Settings />} />
-                        </Route>
-                      </Route>
-                    </Routes>
-                  </HashRouter>
-                </BookingProvider>
-              </ClientProvider>
-            </ProjectProvider>
-          </CartProvider>
-        </GalleryProvider>
-      </AuthProvider>
+                      </Routes>
+                    </HashRouter>
+                  </BookingProvider>
+                </ClientProvider>
+              </ProjectProvider>
+            </CartProvider>
+          </GalleryProvider>
+        </AuthProvider>
+      </SettingsProvider>
     </ThemeProvider>
   );
 }

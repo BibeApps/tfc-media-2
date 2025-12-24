@@ -22,62 +22,32 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const fetchGallery = async () => {
     if (!isConfigured) {
-        console.warn("Supabase not configured. Using Mock Gallery Data.");
-        setGalleryData(GALLERY_DATA);
-        return;
+      console.warn("Supabase not configured. Using Mock Gallery Data.");
+      setGalleryData(GALLERY_DATA);
+      return;
     }
 
     try {
-      // Optimized: Fetch entire hierarchy in one query using Supabase joins
-      // Note: This relies on Foreign Keys being set up correctly in the database schema
+      // Optimized: Only fetch categories initially to avoid timeout
+      // Nested data (events, sessions, items) will be loaded on-demand
       const { data: categories, error } = await supabase
         .from('event_categories')
-        .select(`
-            *,
-            events (
-                *,
-                sessions (
-                    *,
-                    items: gallery_items (*)
-                )
-            )
-        `)
+        .select('*')
+        .eq('archived', false)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       if (!categories) return;
 
+      // Structure data with empty events arrays
+      // Events will be loaded when user navigates to a category
       const structuredData: EventType[] = categories.map((cat: any) => ({
         id: cat.id,
         name: cat.name,
         slug: cat.slug,
         description: cat.description,
         thumbnail: cat.thumbnail,
-        events: (cat.events || []).map((ev: any) => ({
-            id: ev.id,
-            name: ev.name,
-            slug: ev.slug,
-            date: ev.date,
-            thumbnail: ev.thumbnail,
-            sessions: (ev.sessions || []).map((sess: any) => ({
-                id: sess.id,
-                name: sess.name,
-                date: sess.date,
-                thumbnail: sess.thumbnail,
-                items: (sess.items || []).map((i: any) => ({
-                    id: i.id,
-                    title: i.title,
-                    type: i.type,
-                    url: i.watermarked_url,
-                    originalUrl: i.original_url,
-                    price: i.price,
-                    width: i.width,
-                    height: i.height,
-                    description: i.description,
-                    tags: i.tags
-                }))
-            }))
-        }))
+        events: [] // Will be populated on-demand
       }));
 
       setGalleryData(structuredData);
@@ -95,15 +65,15 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const addEventType = async (type: EventType) => {
     if (!isConfigured) {
-        setGalleryData([...galleryData, type]);
-        return;
+      setGalleryData([...galleryData, type]);
+      return;
     }
     const { error } = await supabase.from('event_categories').insert({
-        id: type.id, 
-        name: type.name,
-        slug: type.slug,
-        description: type.description,
-        thumbnail: type.thumbnail
+      id: type.id,
+      name: type.name,
+      slug: type.slug,
+      description: type.description,
+      thumbnail: type.thumbnail
     });
     if (error) console.error("Error adding category:", error.message);
     else fetchGallery();
@@ -111,22 +81,22 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const addEvent = async (typeId: string, event: Event) => {
     if (!isConfigured) {
-        const newData = galleryData.map(t => {
-            if (t.id === typeId) {
-                return { ...t, events: [...t.events, event] };
-            }
-            return t;
-        });
-        setGalleryData(newData);
-        return;
+      const newData = galleryData.map(t => {
+        if (t.id === typeId) {
+          return { ...t, events: [...t.events, event] };
+        }
+        return t;
+      });
+      setGalleryData(newData);
+      return;
     }
     const { error } = await supabase.from('events').insert({
-        id: event.id,
-        category_id: typeId,
-        name: event.name,
-        slug: event.slug,
-        date: event.date,
-        thumbnail: event.thumbnail
+      id: event.id,
+      category_id: typeId,
+      name: event.name,
+      slug: event.slug,
+      date: event.date,
+      thumbnail: event.thumbnail
     });
     if (error) console.error("Error adding event:", error.message);
     else fetchGallery();
@@ -134,15 +104,15 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const addSession = async (typeId: string, eventId: string, session: Session) => {
     if (!isConfigured) {
-        // Mock update logic
-        return; 
+      // Mock update logic
+      return;
     }
     const { error } = await supabase.from('sessions').insert({
-        id: session.id,
-        event_id: eventId,
-        name: session.name,
-        date: session.date,
-        thumbnail: session.thumbnail
+      id: session.id,
+      event_id: eventId,
+      name: session.name,
+      date: session.date,
+      thumbnail: session.thumbnail
     });
     if (error) console.error("Error adding session:", error.message);
     else fetchGallery();
@@ -150,36 +120,36 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const addItemsToSession = async (typeId: string, eventId: string, sessionId: string, items: GalleryItem[]) => {
     if (!isConfigured) {
-        alert("Mock Mode: Items added successfully (local state not fully persisted for complex hierarchy updates in mock mode).");
-        return;
+      alert("Mock Mode: Items added successfully (local state not fully persisted for complex hierarchy updates in mock mode).");
+      return;
     }
     const dbItems = items.map(i => ({
-        session_id: sessionId,
-        title: i.title,
-        type: i.type,
-        watermarked_url: i.url,
-        original_url: i.originalUrl,
-        price: i.price,
-        width: i.width,
-        height: i.height,
-        description: i.description,
-        tags: i.tags
+      session_id: sessionId,
+      title: i.title,
+      type: i.type,
+      watermarked_url: i.url,
+      original_url: i.originalUrl,
+      price: i.price,
+      width: i.width,
+      height: i.height,
+      description: i.description,
+      tags: i.tags
     }));
 
     const { error } = await supabase.from('gallery_items').insert(dbItems);
     if (!error) {
-        // Update session thumbnail if it's the first item
-        if (items.length > 0) {
-           await supabase.from('sessions').update({ thumbnail: items[0].url }).eq('id', sessionId);
-        }
+      // Update session thumbnail if it's the first item
+      if (items.length > 0) {
+        await supabase.from('sessions').update({ thumbnail: items[0].url }).eq('id', sessionId);
+      }
     } else {
-        console.error("Error adding items:", error.message);
+      console.error("Error adding items:", error.message);
     }
     fetchGallery();
   };
 
   const getEventType = (id: string) => galleryData.find(t => t.id === id);
-  
+
   const getEvent = (typeId: string, eventId: string) => {
     const type = getEventType(typeId);
     return type?.events.find(e => e.id === eventId);
@@ -191,12 +161,12 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   return (
-    <GalleryContext.Provider value={{ 
-      galleryData, 
+    <GalleryContext.Provider value={{
+      galleryData,
       refreshGallery: fetchGallery,
-      addEventType, 
-      addEvent, 
-      addSession, 
+      addEventType,
+      addEvent,
+      addSession,
       addItemsToSession,
       getEventType,
       getEvent,
