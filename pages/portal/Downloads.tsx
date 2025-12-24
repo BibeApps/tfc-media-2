@@ -105,18 +105,41 @@ const Downloads: React.FC = () => {
                     return;
                 }
 
-                // Download using signed URL
+                // Fetch the file as a blob and trigger download
+                const response = await fetch(data.signedUrl);
+                const blob = await response.blob();
+
+                // Create blob URL and trigger download
+                const blobUrl = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.href = data.signedUrl;
+                link.href = blobUrl;
                 link.download = item.fileName;
-                link.target = '_blank';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+
+                // Clean up blob URL
+                URL.revokeObjectURL(blobUrl);
             } else {
                 // Handle external URLs (like picsum.photos)
-                // Open in new tab instead of forcing download (which doesn't work with CORS)
-                window.open(item.originalUrl, '_blank');
+                // Try to fetch and download, fallback to opening if CORS fails
+                try {
+                    const response = await fetch(item.originalUrl);
+                    const blob = await response.blob();
+
+                    const blobUrl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = item.fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    URL.revokeObjectURL(blobUrl);
+                } catch (fetchError) {
+                    console.warn('CORS prevented download, opening in new tab:', fetchError);
+                    window.open(item.originalUrl, '_blank');
+                }
             }
         } catch (error) {
             console.error('Download error:', error);
