@@ -7,35 +7,60 @@ export interface DependencyCheckResult {
         events?: number;
         mediaItems?: number;
         subCategories?: number;
+        purchasedItems?: number;
     };
     message: string;
 }
 
 /**
  * Check dependencies for an event (gallery item/session)
- * Events can always be deleted, but we warn about media items
+ * Events cannot be deleted if any media has been purchased
  */
 export async function checkEventDependencies(eventId: string): Promise<DependencyCheckResult> {
     try {
-        // Count media items in this event
-        const { count: mediaCount, error } = await supabase
+        // Get all media items in this event
+        const { data: mediaItems, error: mediaError } = await supabase
             .from('gallery_items')
-            .select('*', { count: 'exact', head: true })
+            .select('id')
             .eq('session_id', eventId);
 
-        if (error) throw error;
+        if (mediaError) throw mediaError;
 
-        const count = mediaCount || 0;
+        const mediaCount = mediaItems?.length || 0;
+        let purchasedCount = 0;
+
+        // Check if any media items have been purchased
+        if (mediaCount > 0) {
+            const mediaIds = mediaItems.map(m => m.id);
+            const { count, error: purchaseError } = await supabase
+                .from('order_items')
+                .select('*', { count: 'exact', head: true })
+                .in('gallery_item_id', mediaIds);
+
+            if (purchaseError) throw purchaseError;
+            purchasedCount = count || 0;
+        }
+
+        // Cannot delete if any items have been purchased
+        const canDelete = purchasedCount === 0;
+
+        let message = '';
+        if (purchasedCount > 0) {
+            message = `Cannot delete. This event contains ${purchasedCount} media item${purchasedCount === 1 ? '' : 's'} that ${purchasedCount === 1 ? 'has' : 'have'} been purchased by customers.`;
+        } else if (mediaCount > 0) {
+            message = `This event contains ${mediaCount} media item${mediaCount === 1 ? '' : 's'} that will be permanently deleted.`;
+        } else {
+            message = 'This event is empty and can be deleted.';
+        }
 
         return {
-            canDelete: true, // Events can always be deleted
-            requiresWarning: count > 0,
+            canDelete,
+            requiresWarning: mediaCount > 0 || purchasedCount > 0,
             dependencies: {
-                mediaItems: count
+                mediaItems: mediaCount,
+                purchasedItems: purchasedCount
             },
-            message: count > 0
-                ? `This event contains ${count} media item${count === 1 ? '' : 's'} that will be permanently deleted.`
-                : 'This event is empty and can be deleted.'
+            message
         };
     } catch (error) {
         console.error('Error checking event dependencies:', error);
@@ -64,17 +89,44 @@ export async function checkSubCategoryDependencies(subCategoryId: string): Promi
 
         const eventCount = events?.length || 0;
 
-        // Count total media items across all events
+        // Count total media items and purchased items across all events
         let mediaCount = 0;
+        let purchasedCount = 0;
+
         if (eventCount > 0) {
             const eventIds = events.map(e => e.id);
-            const { count, error: mediaError } = await supabase
+
+            // Get all media items
+            const { data: mediaItems, error: mediaError } = await supabase
                 .from('gallery_items')
-                .select('*', { count: 'exact', head: true })
+                .select('id')
                 .in('session_id', eventIds);
 
             if (mediaError) throw mediaError;
-            mediaCount = count || 0;
+            mediaCount = mediaItems?.length || 0;
+
+            // Check for purchased items
+            if (mediaCount > 0) {
+                const mediaIds = mediaItems.map(m => m.id);
+                const { count, error: purchaseError } = await supabase
+                    .from('order_items')
+                    .select('*', { count: 'exact', head: true })
+                    .in('gallery_item_id', mediaIds);
+
+                if (purchaseError) throw purchaseError;
+                purchasedCount = count || 0;
+            }
+        }
+
+        let message = '';
+        if (eventCount > 0) {
+            message = `Cannot delete. This sub category contains ${eventCount} event${eventCount === 1 ? '' : 's'}, ${mediaCount} media item${mediaCount === 1 ? '' : 's'}`;
+            if (purchasedCount > 0) {
+                message += `, and ${purchasedCount} purchased item${purchasedCount === 1 ? '' : 's'}`;
+            }
+            message += '.';
+        } else {
+            message = 'This sub category is empty and can be deleted.';
         }
 
         return {
@@ -82,11 +134,10 @@ export async function checkSubCategoryDependencies(subCategoryId: string): Promi
             requiresWarning: true,
             dependencies: {
                 events: eventCount,
-                mediaItems: mediaCount
+                mediaItems: mediaCount,
+                purchasedItems: purchasedCount
             },
-            message: eventCount > 0
-                ? `Cannot delete. This sub category contains ${eventCount} event${eventCount === 1 ? '' : 's'} and ${mediaCount} media item${mediaCount === 1 ? '' : 's'}.`
-                : 'This sub category is empty and can be deleted.'
+            message
         };
     } catch (error) {
         console.error('Error checking sub category dependencies:', error);
@@ -115,9 +166,10 @@ export async function checkCategoryDependencies(categoryId: string): Promise<Dep
 
         const subCategoryCount = subCategories?.length || 0;
 
-        // Count events and media across all sub categories
+        // Count events, media, and purchased items across all sub categories
         let eventCount = 0;
         let mediaCount = 0;
+        let purchasedCount = 0;
 
         if (subCategoryCount > 0) {
             const subCategoryIds = subCategories.map(sc => sc.id);
@@ -132,14 +184,39 @@ export async function checkCategoryDependencies(categoryId: string): Promise<Dep
 
             if (eventCount > 0) {
                 const eventIds = events.map(e => e.id);
-                const { count, error: mediaError } = await supabase
+
+                // Get all media items
+                const { data: mediaItems, error: mediaError } = await supabase
                     .from('gallery_items')
-                    .select('*', { count: 'exact', head: true })
+                    .select('id')
                     .in('session_id', eventIds);
 
                 if (mediaError) throw mediaError;
-                mediaCount = count || 0;
+                mediaCount = mediaItems?.length || 0;
+
+                // Check for purchased items
+                if (mediaCount > 0) {
+                    const mediaIds = mediaItems.map(m => m.id);
+                    const { count, error: purchaseError } = await supabase
+                        .from('order_items')
+                        .select('*', { count: 'exact', head: true })
+                        .in('gallery_item_id', mediaIds);
+
+                    if (purchaseError) throw purchaseError;
+                    purchasedCount = count || 0;
+                }
             }
+        }
+
+        let message = '';
+        if (subCategoryCount > 0) {
+            message = `Cannot delete. This category contains ${subCategoryCount} sub categor${subCategoryCount === 1 ? 'y' : 'ies'}, ${eventCount} event${eventCount === 1 ? '' : 's'}, ${mediaCount} media item${mediaCount === 1 ? '' : 's'}`;
+            if (purchasedCount > 0) {
+                message += `, and ${purchasedCount} purchased item${purchasedCount === 1 ? '' : 's'}`;
+            }
+            message += '.';
+        } else {
+            message = 'This category is empty and can be deleted.';
         }
 
         return {
@@ -148,11 +225,10 @@ export async function checkCategoryDependencies(categoryId: string): Promise<Dep
             dependencies: {
                 subCategories: subCategoryCount,
                 events: eventCount,
-                mediaItems: mediaCount
+                mediaItems: mediaCount,
+                purchasedItems: purchasedCount
             },
-            message: subCategoryCount > 0
-                ? `Cannot delete. This category contains ${subCategoryCount} sub categor${subCategoryCount === 1 ? 'y' : 'ies'}, ${eventCount} event${eventCount === 1 ? '' : 's'}, and ${mediaCount} media item${mediaCount === 1 ? '' : 's'}.`
-                : 'This category is empty and can be deleted.'
+            message
         };
     } catch (error) {
         console.error('Error checking category dependencies:', error);
