@@ -109,22 +109,16 @@ const GalleryUpload: React.FC = () => {
         updateFile(uploadFile.id, { uploading: true, error: undefined });
 
         try {
-            // Upload to Supabase Storage
-            const fileExt = uploadFile.file.name.split('.').pop();
-            const fileName = `${sessionId}/${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+            // Import upload functions from aiUtils
+            const { uploadOriginalMedia, generateWatermarkedMedia } = await import('../../utils/aiUtils');
 
-            const { data: storageData, error: storageError } = await supabase.storage
-                .from('gallery')
-                .upload(fileName, uploadFile.file);
+            // Upload original to media bucket
+            const originalUrl = await uploadOriginalMedia(uploadFile.file, sessionId!);
 
-            if (storageError) throw storageError;
+            // Generate and upload watermarked version to watermarked bucket
+            const watermarkedUrl = await generateWatermarkedMedia(uploadFile.file, sessionId!);
 
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('gallery')
-                .getPublicUrl(fileName);
-
-            // Create gallery item record
+            // Create gallery item record with proper URLs
             const { error: dbError } = await supabase
                 .from('gallery_items')
                 .insert([{
@@ -132,8 +126,8 @@ const GalleryUpload: React.FC = () => {
                     title: uploadFile.title,
                     description: uploadFile.description,
                     type: uploadFile.file.type.startsWith('image/') ? 'photo' : 'video',
-                    watermarked_url: publicUrl,
-                    original_url: publicUrl, // In production, you'd upload a watermarked version separately
+                    watermarked_url: watermarkedUrl,  // Watermarked version from watermarked bucket
+                    original_url: originalUrl,         // Original from media bucket
                     price: uploadFile.price,
                     tags: uploadFile.tags,
                 }]);

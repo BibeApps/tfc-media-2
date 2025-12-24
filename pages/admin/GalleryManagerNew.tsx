@@ -522,7 +522,11 @@ const GalleryManagerNew: React.FC = () => {
 
         setMediaFiles([...mediaFiles, ...newFiles]);
         setProcessingFiles(false);
-        setCurrentStep(Step.EDIT);
+
+        // Only change step if not already in EDIT mode
+        if (currentStep !== Step.EDIT) {
+            setCurrentStep(Step.EDIT);
+        }
     };
 
     const handleUpdateMediaFile = (id: string, updates: Partial<MediaFile>) => {
@@ -1093,6 +1097,42 @@ const GalleryManagerNew: React.FC = () => {
             {/* Step 4: Edit Individual Items */}
             {currentStep === Step.EDIT && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                    {/* Add More Files Section */}
+                    <div
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            handleFilesDropped(e.dataTransfer.files);
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        className="border-2 border-dashed border-electric/50 dark:border-electric/30 rounded-xl p-8 text-center hover:border-electric hover:bg-electric/5 transition-all cursor-pointer bg-white dark:bg-charcoal"
+                    >
+                        <Upload className="w-10 h-10 mx-auto mb-3 text-electric" />
+                        <p className="text-base font-bold mb-2 text-gray-900 dark:text-white">Add More Files</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Drag & drop files here or click the button below</p>
+                        <input
+                            type="file"
+                            multiple
+                            accept="image/*,video/*"
+                            onChange={(e) => e.target.files && handleFilesDropped(e.target.files)}
+                            className="hidden"
+                            id="add-more-files"
+                        />
+                        <label
+                            htmlFor="add-more-files"
+                            className="inline-block px-6 py-3 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold cursor-pointer transition-colors"
+                        >
+                            <Upload className="w-4 h-4 inline mr-2" />
+                            Browse Files
+                        </label>
+                    </div>
+
+                    {processingFiles && (
+                        <div className="text-center py-4 bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10">
+                            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-electric" />
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Processing new files with AI...</p>
+                        </div>
+                    )}
+
                     <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
                         <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
                             Edit Media Items ({mediaFiles.length} files)

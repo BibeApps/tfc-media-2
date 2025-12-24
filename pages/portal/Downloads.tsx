@@ -55,6 +55,7 @@ const Downloads: React.FC = () => {
                     fileSize: 'Unknown', // Not stored in DB currently
                     format: row.gallery_items.type === 'video' ? 'MP4' : 'JPG',
                     thumbnailUrl: row.gallery_items.watermarked_url,
+                    originalUrl: row.gallery_items.original_url,
                     orderId: row.orders.order_number,
                     orderDate: new Date(row.orders.created_at).toISOString().split('T')[0],
                     downloadsRemaining: 999 // Unlimited for now
@@ -68,21 +69,60 @@ const Downloads: React.FC = () => {
         }
     };
 
-    const filteredDownloads = orderFilter 
+    const filteredDownloads = orderFilter
         ? downloads.filter(item => item.orderId === orderFilter)
         : downloads;
 
-    const handleDownload = (item: DownloadItem) => {
-        // In a real scenario, this would generate a signed URL for the 'original_url' 
-        // which is stored in a private bucket.
-        // For now, we simulate by opening the thumbnail or original if public.
-        const link = document.createElement('a');
-        link.href = item.thumbnailUrl; // Should be originalUrl via Signed URL
-        link.download = item.fileName;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleDownload = async (item: DownloadItem) => {
+        try {
+            // Check if this is a Supabase Storage URL
+            const isSupabaseStorage = item.originalUrl.includes('supabase.co/storage');
+
+            if (isSupabaseStorage) {
+                // Handle Supabase Storage URLs with signed URLs
+                const url = new URL(item.originalUrl);
+                const pathParts = url.pathname.split('/');
+
+                // Find 'object' in path and get bucket name
+                const objectIndex = pathParts.indexOf('object');
+                if (objectIndex === -1) {
+                    throw new Error('Invalid storage URL format');
+                }
+
+                // Get bucket name and file path
+                const bucketName = pathParts[objectIndex + 2];
+                const filePath = pathParts.slice(objectIndex + 3).join('/');
+
+                // Generate signed URL (valid for 60 seconds)
+                const { data, error } = await supabase.storage
+                    .from(bucketName)
+                    .createSignedUrl(filePath, 60);
+
+                if (error) {
+                    console.error('Signed URL error:', error);
+                    // Fallback to direct download
+                    window.open(item.originalUrl, '_blank');
+                    return;
+                }
+
+                // Download using signed URL
+                const link = document.createElement('a');
+                link.href = data.signedUrl;
+                link.download = item.fileName;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                // Handle external URLs (like picsum.photos)
+                // Open in new tab instead of forcing download (which doesn't work with CORS)
+                window.open(item.originalUrl, '_blank');
+            }
+        } catch (error) {
+            console.error('Download error:', error);
+            // Fallback: just open the URL
+            window.open(item.originalUrl, '_blank');
+        }
     };
 
     return (
@@ -91,12 +131,12 @@ const Downloads: React.FC = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Download Center</h1>
                     {orderFilter && (
-                         <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-2 mt-2">
                             <span className="text-sm text-gray-500 dark:text-gray-400">Showing files for order: <span className="font-bold text-electric">#{orderFilter}</span></span>
                             <Link to="/portal/downloads" className="text-xs bg-gray-200 dark:bg-white/10 px-2 py-1 rounded-full hover:bg-gray-300 dark:hover:bg-white/20 transition-colors flex items-center gap-1">
                                 Clear Filter <X className="w-3 h-3" />
                             </Link>
-                         </div>
+                        </div>
                     )}
                 </div>
             </div>
@@ -122,7 +162,7 @@ const Downloads: React.FC = () => {
                                     {item.format === 'MP4' ? <FileVideo className="w-8 h-8 text-white" /> : <FileImage className="w-8 h-8 text-white" />}
                                 </div>
                             </div>
-                            
+
                             <div className="flex-1 flex flex-col justify-between">
                                 <div>
                                     <h4 className="font-bold text-gray-900 dark:text-white text-sm line-clamp-1" title={item.fileName}>{item.fileName}</h4>
@@ -130,13 +170,13 @@ const Downloads: React.FC = () => {
                                         {item.format} • Order #{item.orderId}
                                     </p>
                                 </div>
-                                
+
                                 <div className="flex items-center justify-between mt-2">
                                     <div className="flex items-center gap-1 text-xs text-green-500 font-medium">
                                         <Clock className="w-3 h-3" />
                                         Ready
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={() => handleDownload(item)}
                                         className="p-2 rounded-lg bg-gray-100 dark:bg-white/10 hover:bg-electric hover:text-white text-gray-600 dark:text-gray-300 transition-colors"
                                         title={`Download ${item.fileName}`}

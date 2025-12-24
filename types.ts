@@ -210,6 +210,7 @@ export interface DownloadItem {
   fileSize: string;
   format: string;
   thumbnailUrl: string;
+  originalUrl: string;
   orderId: string;
   orderDate: string;
   downloadsRemaining: number;
