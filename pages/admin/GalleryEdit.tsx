@@ -1,6 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Edit2, Save, X, Trash2, Loader2 } from 'lucide-react';
+import { Edit2, Save, X, Trash2, Loader2, MoveRight } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
+import {
+    checkEventDependencies,
+    checkSubCategoryDependencies,
+    checkCategoryDependencies,
+    deleteEventWithMedia,
+    deleteSubCategory,
+    deleteCategory,
+    moveEvent,
+    moveSubCategory,
+    DependencyCheckResult
+} from '../../utils/galleryDependencies';
+import {
+    DeleteWarningModal,
+    MoveEventModal,
+    MoveSubCategoryModal
+} from '../../components/GalleryModals';
 
 interface Category {
     id: string;
@@ -31,6 +47,22 @@ export default function GalleryEdit() {
 
     const [editValue, setEditValue] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Delete/Move modals state
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [deleteModalType, setDeleteModalType] = useState<'event' | 'subcategory' | 'category'>('event');
+    const [deleteModalItem, setDeleteModalItem] = useState<any>(null);
+    const [deleteDependencies, setDeleteDependencies] = useState<DependencyCheckResult | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const [moveEventModalOpen, setMoveEventModalOpen] = useState(false);
+    const [moveEventItem, setMoveEventItem] = useState<Event | null>(null);
+    const [isMovingEvent, setIsMovingEvent] = useState(false);
+
+    const [moveSubCategoryModalOpen, setMoveSubCategoryModalOpen] = useState(false);
+    const [moveSubCategoryItem, setMoveSubCategoryItem] = useState<SubCategory | null>(null);
+    const [moveSubCategoryDeps, setMoveSubCategoryDeps] = useState({ events: 0, mediaItems: 0 });
+    const [isMovingSubCategory, setIsMovingSubCategory] = useState(false);
 
     useEffect(() => {
         fetchAll();
@@ -176,6 +208,111 @@ export default function GalleryEdit() {
         return subCategories.find(sc => sc.id === subCategoryId)?.name || 'Unknown';
     };
 
+    // Delete handlers
+    const handleDeleteClick = async (type: 'event' | 'subcategory' | 'category', item: any) => {
+        setDeleteModalType(type);
+        setDeleteModalItem(item);
+
+        // Check dependencies
+        let deps: DependencyCheckResult;
+        if (type === 'event') {
+            deps = await checkEventDependencies(item.id);
+        } else if (type === 'subcategory') {
+            deps = await checkSubCategoryDependencies(item.id);
+        } else {
+            deps = await checkCategoryDependencies(item.id);
+        }
+
+        setDeleteDependencies(deps);
+        setDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteModalItem) return;
+
+        setIsDeleting(true);
+        let result;
+
+        if (deleteModalType === 'event') {
+            result = await deleteEventWithMedia(deleteModalItem.id);
+        } else if (deleteModalType === 'subcategory') {
+            result = await deleteSubCategory(deleteModalItem.id);
+        } else {
+            result = await deleteCategory(deleteModalItem.id);
+        }
+
+        setIsDeleting(false);
+
+        if (result.success) {
+            // Refresh data
+            if (deleteModalType === 'event') {
+                await fetchEvents();
+            } else if (deleteModalType === 'subcategory') {
+                await fetchSubCategories();
+            } else if (deleteModalType === 'category') {
+                await fetchCategories();
+            }
+
+            setDeleteModalOpen(false);
+            setDeleteModalItem(null);
+            alert(`${deleteModalType.charAt(0).toUpperCase() + deleteModalType.slice(1)} deleted successfully!`);
+        } else {
+            alert(`Failed to delete: ${result.error}`);
+        }
+    };
+
+    // Move handlers
+    const handleMoveEventClick = (event: Event) => {
+        setMoveEventItem(event);
+        setMoveEventModalOpen(true);
+    };
+
+    const handleConfirmMoveEvent = async (newSubCategoryId: string) => {
+        if (!moveEventItem) return;
+
+        setIsMovingEvent(true);
+        const result = await moveEvent(moveEventItem.id, newSubCategoryId);
+        setIsMovingEvent(false);
+
+        if (result.success) {
+            await fetchEvents();
+            setMoveEventModalOpen(false);
+            setMoveEventItem(null);
+            alert('Event moved successfully!');
+        } else {
+            alert(`Failed to move event: ${result.error}`);
+        }
+    };
+
+    const handleMoveSubCategoryClick = async (subCategory: SubCategory) => {
+        // Get dependency counts
+        const deps = await checkSubCategoryDependencies(subCategory.id);
+        setMoveSubCategoryDeps({
+            events: deps.dependencies.events || 0,
+            mediaItems: deps.dependencies.mediaItems || 0
+        });
+
+        setMoveSubCategoryItem(subCategory);
+        setMoveSubCategoryModalOpen(true);
+    };
+
+    const handleConfirmMoveSubCategory = async (newCategoryId: string) => {
+        if (!moveSubCategoryItem) return;
+
+        setIsMovingSubCategory(true);
+        const result = await moveSubCategory(moveSubCategoryItem.id, newCategoryId);
+        setIsMovingSubCategory(false);
+
+        if (result.success) {
+            await fetchSubCategories();
+            setMoveSubCategoryModalOpen(false);
+            setMoveSubCategoryItem(null);
+            alert('Sub category moved successfully!');
+        } else {
+            alert(`Failed to move sub category: ${result.error}`);
+        }
+    };
+
     return (
         <div className="p-8">
             <div className="mb-8">
@@ -221,6 +358,12 @@ export default function GalleryEdit() {
                                             className="p-2 bg-electric/10 hover:bg-electric/20 text-electric rounded-lg"
                                         >
                                             <Edit2 className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteClick('category', category)}
+                                            className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
                                         </button>
                                     </>
                                 )}
@@ -274,6 +417,18 @@ export default function GalleryEdit() {
                                             className="p-2 bg-electric/10 hover:bg-electric/20 text-electric rounded-lg"
                                         >
                                             <Edit2 className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleMoveSubCategoryClick(subCategory)}
+                                            className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 rounded-lg"
+                                        >
+                                            <MoveRight className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteClick('subcategory', subCategory)}
+                                            className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
                                         </button>
                                     </>
                                 )}
@@ -329,6 +484,18 @@ export default function GalleryEdit() {
                                         >
                                             <Edit2 className="w-5 h-5" />
                                         </button>
+                                        <button
+                                            onClick={() => handleMoveEventClick(event)}
+                                            className="p-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 rounded-lg"
+                                        >
+                                            <MoveRight className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteClick('event', event)}
+                                            className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
                                     </>
                                 )}
                             </div>
@@ -339,6 +506,50 @@ export default function GalleryEdit() {
                     </div>
                 </div>
             </div>
+
+            {/* Delete Warning Modal */}
+            <DeleteWarningModal
+                isOpen={deleteModalOpen}
+                type={deleteModalType}
+                itemName={deleteModalItem?.name || ''}
+                dependencies={deleteDependencies || { canDelete: false, requiresWarning: true, dependencies: {}, message: '' }}
+                onConfirm={handleConfirmDelete}
+                onCancel={() => {
+                    setDeleteModalOpen(false);
+                    setDeleteModalItem(null);
+                }}
+                isDeleting={isDeleting}
+            />
+
+            {/* Move Event Modal */}
+            <MoveEventModal
+                isOpen={moveEventModalOpen}
+                eventName={moveEventItem?.name || ''}
+                currentSubCategoryId={moveEventItem?.event_id || ''}
+                subCategories={subCategories}
+                categories={categories}
+                onMove={handleConfirmMoveEvent}
+                onCancel={() => {
+                    setMoveEventModalOpen(false);
+                    setMoveEventItem(null);
+                }}
+                isMoving={isMovingEvent}
+            />
+
+            {/* Move Sub Category Modal */}
+            <MoveSubCategoryModal
+                isOpen={moveSubCategoryModalOpen}
+                subCategoryName={moveSubCategoryItem?.name || ''}
+                currentCategoryId={moveSubCategoryItem?.category_id || ''}
+                categories={categories}
+                dependencyCounts={moveSubCategoryDeps}
+                onMove={handleConfirmMoveSubCategory}
+                onCancel={() => {
+                    setMoveSubCategoryModalOpen(false);
+                    setMoveSubCategoryItem(null);
+                }}
+                isMoving={isMovingSubCategory}
+            />
         </div>
     );
 }
