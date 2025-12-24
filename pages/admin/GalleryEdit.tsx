@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit2, Save, X, Trash2, Loader2, MoveRight } from 'lucide-react';
+import { Edit2, Save, X, Trash2, Loader2, MoveRight, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import {
     checkEventDependencies,
@@ -63,6 +63,14 @@ export default function GalleryEdit() {
     const [moveSubCategoryItem, setMoveSubCategoryItem] = useState<SubCategory | null>(null);
     const [moveSubCategoryDeps, setMoveSubCategoryDeps] = useState({ events: 0, mediaItems: 0 });
     const [isMovingSubCategory, setIsMovingSubCategory] = useState(false);
+
+    // Search, Pagination, and Expand/Collapse state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [categoryPage, setCategoryPage] = useState(1);
+    const [subCategoryPage, setSubCategoryPage] = useState(1);
+    const [eventPage, setEventPage] = useState(1);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const itemsPerPage = 5;
 
     useEffect(() => {
         fetchAll();
@@ -313,6 +321,59 @@ export default function GalleryEdit() {
         }
     };
 
+    // Search and filter functions
+    const filteredCategories = categories.filter(cat =>
+        cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const filteredSubCategories = subCategories.filter(sub =>
+        sub.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const filteredEvents = events.filter(event =>
+        event.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Pagination helper
+    const paginateItems = <T,>(items: T[], page: number): T[] => {
+        if (isExpanded) return items; // Show all when expanded
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return items.slice(startIndex, endIndex);
+    };
+
+    // Get paginated items
+    const paginatedCategories = paginateItems(filteredCategories, categoryPage);
+    const paginatedSubCategories = paginateItems(filteredSubCategories, subCategoryPage);
+    const paginatedEvents = paginateItems(filteredEvents, eventPage);
+
+    // Calculate total pages
+    const categoryTotalPages = Math.ceil(filteredCategories.length / itemsPerPage);
+    const subCategoryTotalPages = Math.ceil(filteredSubCategories.length / itemsPerPage);
+    const eventTotalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+
+    // Handle search change
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        // Reset to page 1 when search changes
+        setCategoryPage(1);
+        setSubCategoryPage(1);
+        setEventPage(1);
+    };
+
+    // Clear search
+    const handleClearSearch = () => {
+        setSearchQuery('');
+        setCategoryPage(1);
+        setSubCategoryPage(1);
+        setEventPage(1);
+    };
+
+    // Toggle expand/collapse
+    const toggleExpand = () => {
+        setIsExpanded(!isExpanded);
+    };
+
     return (
         <div className="p-8">
             <div className="mb-8">
@@ -320,12 +381,57 @@ export default function GalleryEdit() {
                 <p className="text-gray-600 dark:text-gray-400">Edit category, sub-category, and event names</p>
             </div>
 
+            {/* Search and Controls */}
+            <div className="mb-6 flex gap-4 items-center">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search categories, sub-categories, or events..."
+                        value={searchQuery}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="w-full pl-10 pr-10 py-3 bg-white dark:bg-charcoal border border-gray-300 dark:border-white/20 rounded-lg focus:ring-2 focus:ring-electric focus:border-electric"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={handleClearSearch}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    )}
+                </div>
+                <button
+                    onClick={toggleExpand}
+                    className="px-4 py-3 bg-electric/10 hover:bg-electric/20 text-electric border border-electric/20 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                >
+                    {isExpanded ? (
+                        <>
+                            <ChevronUp className="w-5 h-5" />
+                            Collapse All
+                        </>
+                    ) : (
+                        <>
+                            <ChevronDown className="w-5 h-5" />
+                            Expand All
+                        </>
+                    )}
+                </button>
+            </div>
+
             <div className="space-y-8">
                 {/* Categories */}
                 <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Categories</h2>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Categories</h2>
+                        {!isExpanded && filteredCategories.length > 0 && (
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                                Showing {((categoryPage - 1) * itemsPerPage) + 1}-{Math.min(categoryPage * itemsPerPage, filteredCategories.length)} of {filteredCategories.length}
+                            </span>
+                        )}
+                    </div>
                     <div className="space-y-2">
-                        {categories.map(category => (
+                        {paginatedCategories.map(category => (
                             <div key={category.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-obsidian rounded-lg">
                                 {editingCategory === category.id ? (
                                     <>
@@ -369,17 +475,58 @@ export default function GalleryEdit() {
                                 )}
                             </div>
                         ))}
-                        {categories.length === 0 && (
-                            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No categories found</p>
+                        {filteredCategories.length === 0 && (
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                                {searchQuery ? 'No categories match your search' : 'No categories found'}
+                            </p>
                         )}
                     </div>
+
+                    {/* Pagination Controls */}
+                    {!isExpanded && categoryTotalPages > 1 && (
+                        <div className="mt-4 flex justify-center gap-2">
+                            <button
+                                onClick={() => setCategoryPage(Math.max(1, categoryPage - 1))}
+                                disabled={categoryPage === 1}
+                                className="px-3 py-1 bg-gray-100 dark:bg-obsidian border border-gray-300 dark:border-white/20 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-obsidian/80"
+                            >
+                                Previous
+                            </button>
+                            {Array.from({ length: categoryTotalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCategoryPage(page)}
+                                    className={`px-3 py-1 rounded-lg border ${page === categoryPage
+                                        ? 'bg-electric text-white border-electric'
+                                        : 'bg-gray-100 dark:bg-obsidian border-gray-300 dark:border-white/20 hover:bg-gray-200 dark:hover:bg-obsidian/80'
+                                        }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setCategoryPage(Math.min(categoryTotalPages, categoryPage + 1))}
+                                disabled={categoryPage === categoryTotalPages}
+                                className="px-3 py-1 bg-gray-100 dark:bg-obsidian border border-gray-300 dark:border-white/20 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-obsidian/80"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Sub-Categories */}
                 <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Sub-Categories</h2>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Sub-Categories</h2>
+                        {!isExpanded && filteredSubCategories.length > 0 && (
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                                Showing {((subCategoryPage - 1) * itemsPerPage) + 1}-{Math.min(subCategoryPage * itemsPerPage, filteredSubCategories.length)} of {filteredSubCategories.length}
+                            </span>
+                        )}
+                    </div>
                     <div className="space-y-2">
-                        {subCategories.map(subCategory => (
+                        {paginatedSubCategories.map(subCategory => (
                             <div key={subCategory.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-obsidian rounded-lg">
                                 {editingSubCategory === subCategory.id ? (
                                     <>
@@ -434,17 +581,58 @@ export default function GalleryEdit() {
                                 )}
                             </div>
                         ))}
-                        {subCategories.length === 0 && (
-                            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No sub-categories found</p>
+                        {filteredSubCategories.length === 0 && (
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                                {searchQuery ? 'No sub-categories match your search' : 'No sub-categories found'}
+                            </p>
                         )}
                     </div>
+
+                    {/* Pagination Controls */}
+                    {!isExpanded && subCategoryTotalPages > 1 && (
+                        <div className="mt-4 flex justify-center gap-2">
+                            <button
+                                onClick={() => setSubCategoryPage(Math.max(1, subCategoryPage - 1))}
+                                disabled={subCategoryPage === 1}
+                                className="px-3 py-1 bg-gray-100 dark:bg-obsidian border border-gray-300 dark:border-white/20 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-obsidian/80"
+                            >
+                                Previous
+                            </button>
+                            {Array.from({ length: subCategoryTotalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => setSubCategoryPage(page)}
+                                    className={`px-3 py-1 rounded-lg border ${page === subCategoryPage
+                                        ? 'bg-electric text-white border-electric'
+                                        : 'bg-gray-100 dark:bg-obsidian border-gray-300 dark:border-white/20 hover:bg-gray-200 dark:hover:bg-obsidian/80'
+                                        }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setSubCategoryPage(Math.min(subCategoryTotalPages, subCategoryPage + 1))}
+                                disabled={subCategoryPage === subCategoryTotalPages}
+                                className="px-3 py-1 bg-gray-100 dark:bg-obsidian border border-gray-300 dark:border-white/20 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-obsidian/80"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Events */}
                 <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Events</h2>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Events</h2>
+                        {!isExpanded && filteredEvents.length > 0 && (
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                                Showing {((eventPage - 1) * itemsPerPage) + 1}-{Math.min(eventPage * itemsPerPage, filteredEvents.length)} of {filteredEvents.length}
+                            </span>
+                        )}
+                    </div>
                     <div className="space-y-2">
-                        {events.map(event => (
+                        {paginatedEvents.map(event => (
                             <div key={event.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-obsidian rounded-lg">
                                 {editingEvent === event.id ? (
                                     <>
@@ -500,10 +688,44 @@ export default function GalleryEdit() {
                                 )}
                             </div>
                         ))}
-                        {events.length === 0 && (
-                            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No events found</p>
+                        {filteredEvents.length === 0 && (
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                                {searchQuery ? 'No events match your search' : 'No events found'}
+                            </p>
                         )}
                     </div>
+
+                    {/* Pagination Controls */}
+                    {!isExpanded && eventTotalPages > 1 && (
+                        <div className="mt-4 flex justify-center gap-2">
+                            <button
+                                onClick={() => setEventPage(Math.max(1, eventPage - 1))}
+                                disabled={eventPage === 1}
+                                className="px-3 py-1 bg-gray-100 dark:bg-obsidian border border-gray-300 dark:border-white/20 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-obsidian/80"
+                            >
+                                Previous
+                            </button>
+                            {Array.from({ length: eventTotalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => setEventPage(page)}
+                                    className={`px-3 py-1 rounded-lg border ${page === eventPage
+                                            ? 'bg-electric text-white border-electric'
+                                            : 'bg-gray-100 dark:bg-obsidian border-gray-300 dark:border-white/20 hover:bg-gray-200 dark:hover:bg-obsidian/80'
+                                        }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setEventPage(Math.min(eventTotalPages, eventPage + 1))}
+                                disabled={eventPage === eventTotalPages}
+                                className="px-3 py-1 bg-gray-100 dark:bg-obsidian border border-gray-300 dark:border-white/20 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-obsidian/80"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
