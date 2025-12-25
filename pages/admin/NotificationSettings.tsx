@@ -26,6 +26,7 @@ const Notifications: React.FC = () => {
     const [settings, setSettings] = useState<NotificationSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     useEffect(() => {
         fetchSettings();
@@ -70,6 +71,7 @@ const Notifications: React.FC = () => {
 
         try {
             setSaving(true);
+            setMessage(null);
 
             if (settings.id) {
                 const { error } = await supabase
@@ -79,17 +81,22 @@ const Notifications: React.FC = () => {
 
                 if (error) throw error;
             } else {
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('notification_settings')
-                    .insert([settings]);
+                    .insert([settings])
+                    .select()
+                    .single();
 
                 if (error) throw error;
+                if (data) setSettings(data);
             }
 
-            alert('Settings saved successfully!');
-        } catch (err) {
+            setMessage({ type: 'success', text: 'Settings saved successfully!' });
+            setTimeout(() => setMessage(null), 5000);
+        } catch (err: any) {
             console.error('Error saving settings:', err);
-            alert('Failed to save settings');
+            setMessage({ type: 'error', text: err.message || 'Failed to save settings' });
+            setTimeout(() => setMessage(null), 5000);
         } finally {
             setSaving(false);
         }
@@ -121,6 +128,16 @@ const Notifications: React.FC = () => {
                     Save Settings
                 </button>
             </div>
+
+            {/* Success/Error Message */}
+            {message && (
+                <div className={`p-4 rounded-lg border ${message.type === 'success'
+                        ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/50'
+                        : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/50'
+                    }`}>
+                    {message.text}
+                </div>
+            )}
 
             {/* Email Settings */}
             <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
