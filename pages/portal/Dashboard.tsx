@@ -52,12 +52,14 @@ const Dashboard: React.FC = () => {
             }
 
             try {
-                // Get all paid orders for this user
+                // Get all paid/completed orders for this user
+                // Note: orders table uses 'client_id' not 'user_id'
+                // Status can be 'paid' or 'completed'
                 const { data: orders, error: ordersError } = await supabase
                     .from('orders')
                     .select('id, total_amount')
-                    .eq('user_id', user.id)
-                    .eq('payment_status', 'paid');
+                    .eq('client_id', user.id)
+                    .in('status', ['paid', 'completed']);
 
                 if (ordersError) throw ordersError;
 
