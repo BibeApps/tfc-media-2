@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Camera, Download, MessageCircle, DollarSign, Calendar, ShoppingBag, Heart, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProjects } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../supabaseClient';
 
 const StatCard: React.FC<{ title: string; value: string | number; icon: React.ReactNode; link?: string }> = ({ title, value, icon, link }) => {
     const Content = () => (
@@ -34,6 +35,66 @@ const Dashboard: React.FC = () => {
     const activeProjects = projects.filter(p => p.status === 'in_progress' || p.status === 'not_started');
     const recentProjects = [...projects].sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime()).slice(0, 2);
 
+    // Dashboard stats state
+    const [stats, setStats] = useState({
+        downloads: 0,
+        totalSpent: 0,
+        newPhotos: 0
+    });
+    const [loading, setLoading] = useState(true);
+
+    // Fetch dashboard statistics
+    useEffect(() => {
+        const fetchDashboardStats = async () => {
+            if (!user?.id) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                // Get all paid orders for this user
+                const { data: orders, error: ordersError } = await supabase
+                    .from('orders')
+                    .select('id, total_amount')
+                    .eq('user_id', user.id)
+                    .eq('payment_status', 'paid');
+
+                if (ordersError) throw ordersError;
+
+                // Calculate total spent
+                const totalSpent = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
+
+                // Get count of purchased items (downloads available)
+                const { count: downloadCount, error: itemsError } = await supabase
+                    .from('order_items')
+                    .select('*', { count: 'exact', head: true })
+                    .in('order_id', orders?.map(o => o.id) || []);
+
+                if (itemsError) throw itemsError;
+
+                setStats({
+                    downloads: downloadCount || 0,
+                    totalSpent: totalSpent,
+                    newPhotos: downloadCount || 0
+                });
+            } catch (error) {
+                console.error('Error fetching dashboard stats:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardStats();
+    }, [user?.id]);
+
+    // Format currency
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(amount);
+    };
+
     return (
         <div className="space-y-8">
             {/* Welcome Section */}
@@ -41,7 +102,11 @@ const Dashboard: React.FC = () => {
                 <div className="relative z-10">
                     <h1 className="text-3xl font-heading font-bold mb-2">Welcome back, {user?.name || 'User'}!</h1>
                     <p className="opacity-90 max-w-xl">
-                        You have {activeProjects.length} active projects and 5 new photos ready for download. Check your latest gallery updates below.
+                        {loading ? (
+                            'Loading your dashboard...'
+                        ) : (
+                            `You have ${activeProjects.length} active project${activeProjects.length !== 1 ? 's' : ''} and ${stats.newPhotos} photo${stats.newPhotos !== 1 ? 's' : ''} ready for download. Check your latest gallery updates below.`
+                        )}
                     </p>
                 </div>
                 <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 skew-x-12 transform translate-x-12"></div>
@@ -49,10 +114,29 @@ const Dashboard: React.FC = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Active Projects" value={activeProjects.length} icon={<Camera className="w-6 h-6" />} link="/portal/projects" />
-                <StatCard title="Available Downloads" value={14} icon={<Download className="w-6 h-6" />} link="/portal/downloads" />
-                <StatCard title="Messages" value="3 New" icon={<MessageCircle className="w-6 h-6" />} />
-                <StatCard title="Total Spent" value="$2,450" icon={<DollarSign className="w-6 h-6" />} link="/portal/purchases" />
+                <StatCard
+                    title="Active Projects"
+                    value={loading ? '...' : activeProjects.length}
+                    icon={<Camera className="w-6 h-6" />}
+                    link="/portal/projects"
+                />
+                <StatCard
+                    title="Available Downloads"
+                    value={loading ? '...' : stats.downloads}
+                    icon={<Download className="w-6 h-6" />}
+                    link="/portal/downloads"
+                />
+                <StatCard
+                    title="Messages"
+                    value="Coming Soon"
+                    icon={<MessageCircle className="w-6 h-6" />}
+                />
+                <StatCard
+                    title="Total Spent"
+                    value={loading ? '...' : formatCurrency(stats.totalSpent)}
+                    icon={<DollarSign className="w-6 h-6" />}
+                    link="/portal/purchases"
+                />
             </div>
 
             <div className="grid lg:grid-cols-3 gap-8">
