@@ -132,8 +132,8 @@ const Notifications: React.FC = () => {
             {/* Success/Error Message */}
             {message && (
                 <div className={`p-4 rounded-lg border ${message.type === 'success'
-                        ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/50'
-                        : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/50'
+                    ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/50'
+                    : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/50'
                     }`}>
                     {message.text}
                 </div>
@@ -193,7 +193,7 @@ const Notifications: React.FC = () => {
                     </div>
                     <div>
                         <h3 className="font-bold text-lg text-gray-900 dark:text-white">SMS Notifications</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Configure Twilio SMS settings</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Enable or disable SMS notifications via Twilio</p>
                     </div>
                 </div>
 
@@ -208,37 +208,11 @@ const Notifications: React.FC = () => {
                         />
                     </div>
 
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Twilio Account SID</label>
-                            <input
-                                type="text"
-                                value={settings.twilio_account_sid}
-                                onChange={(e) => setSettings({ ...settings, twilio_account_sid: e.target.value })}
-                                placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                                className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Twilio Auth Token</label>
-                            <input
-                                type="password"
-                                value={settings.twilio_auth_token}
-                                onChange={(e) => setSettings({ ...settings, twilio_auth_token: e.target.value })}
-                                placeholder="••••••••••••••••••••••••••••••••"
-                                className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Twilio Phone Number</label>
-                            <input
-                                type="tel"
-                                value={settings.twilio_phone_number}
-                                onChange={(e) => setSettings({ ...settings, twilio_phone_number: formatPhoneNumber(e.target.value) })}
-                                placeholder="+1234567890"
-                                className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
-                            />
-                        </div>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/50 rounded-lg p-4">
+                        <p className="text-sm text-blue-700 dark:text-blue-400">
+                            <strong>Note:</strong> Twilio credentials are configured in environment variables (.env file).
+                            SMS will only work if valid Twilio credentials are set.
+                        </p>
                     </div>
                 </div>
             </div>
