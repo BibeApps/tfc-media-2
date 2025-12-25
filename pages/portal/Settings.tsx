@@ -186,11 +186,13 @@ const Settings: React.FC = () => {
 
                                         // Save to database immediately
                                         if (user) {
-                                            // Convert camelCase to snake_case properly
-                                            const dbKey = `notification_${item.key
-                                                .replace(/([A-Z])/g, '_$1')
-                                                .toLowerCase()
-                                                .replace(/^_/, '')}`; // Remove leading underscore
+                                            // Map UI keys to database column names
+                                            const keyMap: Record<string, string> = {
+                                                'projectUpdates': 'notification_project_updates',
+                                                'downloadReminders': 'notification_downloads'
+                                            };
+
+                                            const dbKey = keyMap[item.key];
 
                                             await updateProfile(user.id, {
                                                 [dbKey]: newValue
