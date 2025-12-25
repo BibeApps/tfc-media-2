@@ -42,6 +42,9 @@ const Settings: React.FC = () => {
                 company: user.company || '',
                 phone: user.phone || '',
                 address: user.address || '',
+                city: user.city || '',
+                state: user.state || '',
+                zip: user.zip || '',
                 email: user.email
             }));
         }
@@ -54,7 +57,10 @@ const Settings: React.FC = () => {
             name: profileForm.name,
             company: profileForm.company,
             phone: profileForm.phone,
-            address: profileForm.address
+            address: profileForm.address,
+            city: profileForm.city,
+            state: profileForm.state,
+            zip: profileForm.zip
         });
         alert(message);
     };
@@ -120,7 +126,19 @@ const Settings: React.FC = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
-                            <input type="text" value={profileForm.address} onChange={e => setProfileForm({ ...profileForm, address: e.target.value })} className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-2.5 text-gray-900 dark:text-white" />
+                            <input type="text" value={profileForm.address} onChange={e => setProfileForm({ ...profileForm, address: e.target.value })} className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-2.5 text-gray-900 dark:text-white" placeholder="Street address" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
+                            <input type="text" value={profileForm.city} onChange={e => setProfileForm({ ...profileForm, city: e.target.value })} className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-2.5 text-gray-900 dark:text-white" placeholder="City" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State</label>
+                            <input type="text" value={profileForm.state} onChange={e => setProfileForm({ ...profileForm, state: e.target.value })} className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-2.5 text-gray-900 dark:text-white" placeholder="State" maxLength={2} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ZIP Code</label>
+                            <input type="text" value={profileForm.zip} onChange={e => setProfileForm({ ...profileForm, zip: e.target.value })} className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg p-2.5 text-gray-900 dark:text-white" placeholder="ZIP Code" maxLength={10} />
                         </div>
                     </div>
                 </div>
