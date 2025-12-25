@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Camera, Download, MessageCircle, DollarSign, Calendar, ShoppingBag, Heart, ArrowRight } from 'lucide-react';
+import { Camera, Download, Heart, DollarSign, Calendar, ShoppingBag, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProjects } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../supabaseClient';
+import { useFavorites } from '../../hooks/useFavorites';
 
 const StatCard: React.FC<{ title: string; value: string | number; icon: React.ReactNode; link?: string }> = ({ title, value, icon, link }) => {
     const Content = () => (
@@ -32,6 +33,7 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
 const Dashboard: React.FC = () => {
     const { user } = useAuth();
     const { projects } = useProjects();
+    const { favorites } = useFavorites();
     const activeProjects = projects.filter(p => p.status === 'in_progress' || p.status === 'not_started');
     const recentProjects = [...projects].sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime()).slice(0, 2);
 
@@ -129,9 +131,10 @@ const Dashboard: React.FC = () => {
                     link="/portal/downloads"
                 />
                 <StatCard
-                    title="Messages"
-                    value="Coming Soon"
-                    icon={<MessageCircle className="w-6 h-6" />}
+                    title="Favorites"
+                    value={loading ? '...' : favorites.length}
+                    icon={<Heart className="w-6 h-6" />}
+                    link="/portal/favorites"
                 />
                 <StatCard
                     title="Total Spent"

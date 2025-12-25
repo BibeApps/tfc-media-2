@@ -20,6 +20,7 @@ import Dashboard from './pages/portal/Dashboard';
 import Projects from './pages/portal/Projects';
 import Purchases from './pages/portal/Purchases';
 import Downloads from './pages/portal/Downloads';
+import Favorites from './pages/portal/Favorites';
 import Settings from './pages/portal/Settings';
 import MyEvents from './pages/portal/MyEvents';
 import MyBookings from './pages/portal/MyBookings';
@@ -152,6 +153,7 @@ function App() {
                             <Route path="bookings" element={<MyBookings />} />
                             <Route path="purchases" element={<Purchases />} />
                             <Route path="downloads" element={<Downloads />} />
+                            <Route path="favorites" element={<Favorites />} />
                             <Route path="settings" element={<Settings />} />
                           </Route>
                         </Route>
