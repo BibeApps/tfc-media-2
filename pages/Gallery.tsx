@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, ArrowLeft, ShoppingCart, Lock, Loader2 } from 'lucide-react';
+import { ChevronRight, ArrowLeft, ShoppingCart, Lock, Loader2, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../supabaseClient';
+import { useFavorites } from '../hooks/useFavorites';
+import { ImageModal } from '../components/ImageModal';
 
 enum ViewState {
   TYPES = 'types',
@@ -53,6 +55,7 @@ interface GalleryItem {
 
 const Gallery: React.FC = () => {
   const { addItem } = useCart();
+  const { favorites, isFavorited, toggleFavorite } = useFavorites();
   const [loading, setLoading] = useState(true);
   const [viewState, setViewState] = useState<ViewState>(ViewState.TYPES);
 
@@ -64,6 +67,10 @@ const Gallery: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<EventCategory | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+
+  // Image modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     fetchCategories();
@@ -387,25 +394,65 @@ const Gallery: React.FC = () => {
                   <p>No items in this session.</p>
                 </div>
               ) : (
-                galleryItems.map((item) => (
-                  <div key={item.id} className="group relative bg-white dark:bg-charcoal rounded-lg overflow-hidden border border-gray-200 dark:border-white/5 shadow-sm">
-                    <div className="aspect-[4/5] relative overflow-hidden">
-                      <img src={item.watermarked_url} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
+                galleryItems.map((item, index) => (
+                  <div key={item.id} className="group relative bg-white dark:bg-charcoal rounded-lg overflow-hidden border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-lg transition-shadow">
+                    {/* Heart Icon - Always Visible */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(item.id);
+                      }}
+                      className="absolute top-2 right-2 z-10 p-2 bg-white/90 dark:bg-black/90 rounded-full hover:scale-110 transition-transform shadow-md"
+                      aria-label={isFavorited(item.id) ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <Heart
+                        className={`w-4 h-4 ${isFavorited(item.id)
+                            ? 'fill-red-500 text-red-500'
+                            : 'text-gray-600 dark:text-gray-300'
+                          }`}
+                      />
+                    </button>
 
-                      {/* Hover Actions */}
-                      <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4 text-center">
-                        {item.tags && item.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 justify-center max-h-12 overflow-hidden">
+                    {/* Image - Clickable to open modal */}
+                    <div
+                      className="aspect-[4/5] relative overflow-hidden cursor-pointer"
+                      onClick={() => {
+                        setCurrentImageIndex(index);
+                        setModalOpen(true);
+                      }}
+                    >
+                      <img
+                        src={item.watermarked_url}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+
+                      {/* Tags overlay on hover */}
+                      {item.tags && item.tags.length > 0 && (
+                        <div className="absolute top-12 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex flex-wrap gap-1">
                             {item.tags.slice(0, 3).map(tag => (
-                              <span key={tag} className="text-[10px] bg-white/10 px-1 rounded text-gray-300">#{tag}</span>
+                              <span key={tag} className="text-[10px] bg-black/70 px-2 py-1 rounded text-white backdrop-blur-sm">#{tag}</span>
                             ))}
                           </div>
-                        )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Bar - Price + Add to Cart */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-white font-bold text-sm">${item.price.toFixed(2)}</span>
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleAddToCart(item); }}
-                          className="mt-2 bg-electric hover:bg-electric/80 text-white px-4 py-2 rounded-full font-bold text-xs flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all shadow-lg shadow-electric/20"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(item);
+                          }}
+                          className="px-3 py-1.5 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors shadow-lg"
                         >
-                          <ShoppingCart className="w-3 h-3" /> Add ${item.price.toFixed(2)}
+                          <ShoppingCart className="w-3 h-3" />
+                          Add to Cart
                         </button>
                       </div>
                     </div>
@@ -416,6 +463,25 @@ const Gallery: React.FC = () => {
           )}
         </motion.div>
       )}
+
+      {/* Image Modal */}
+      <ImageModal
+        isOpen={modalOpen}
+        items={galleryItems.map(item => ({
+          id: item.id,
+          watermarked_url: item.watermarked_url,
+          price: item.price,
+          media_type: item.type === 'video' ? 'video' : 'image',
+          description: item.description
+        }))}
+        currentIndex={currentImageIndex}
+        onClose={() => setModalOpen(false)}
+        onNext={() => setCurrentImageIndex(prev => Math.min(prev + 1, galleryItems.length - 1))}
+        onPrevious={() => setCurrentImageIndex(prev => Math.max(prev - 1, 0))}
+        onToggleFavorite={toggleFavorite}
+        onAddToCart={handleAddToCart}
+        isFavorited={isFavorited}
+      />
     </div>
   );
 };
