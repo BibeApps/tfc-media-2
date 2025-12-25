@@ -971,7 +971,8 @@ const GalleryManagerNew: React.FC = () => {
                                 <div className="mt-4 px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-700 dark:text-green-400 text-center font-bold">
                                     ✓ Confirmed
                                 </div>
-                            )}\n                        </div>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex justify-end">
