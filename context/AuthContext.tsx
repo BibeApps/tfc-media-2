@@ -260,6 +260,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (updates.company) dbUpdates.company = updates.company;
         if (updates.phone) dbUpdates.phone = updates.phone;
         if (updates.address) dbUpdates.address = updates.address;
+        if (updates.city !== undefined) dbUpdates.city = updates.city;
+        if (updates.state !== undefined) dbUpdates.state = updates.state;
+        if (updates.zip !== undefined) dbUpdates.zip = updates.zip;
 
         const { error } = await supabase.from('profiles').update(dbUpdates).eq('id', id);
 
