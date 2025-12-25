@@ -192,20 +192,25 @@ const Settings: React.FC = () => {
 
                                         // Save to database immediately
                                         if (user) {
-                                            const dbKey = `notification_${item.key.replace(/([A-Z])/g, '_$1').toLowerCase()}`;
+                                            // Convert camelCase to snake_case properly
+                                            const dbKey = `notification_${item.key
+                                                .replace(/([A-Z])/g, '_$1')
+                                                .toLowerCase()
+                                                .replace(/^_/, '')}`; // Remove leading underscore
+
                                             await updateProfile(user.id, {
                                                 [dbKey]: newValue
                                             } as any);
                                         }
                                     }}
                                     className={`w-10 h-5 rounded-full flex items-center transition-colors p-1 ${notifications[item.key as keyof typeof notifications]
-                                            ? 'bg-electric'
-                                            : 'bg-gray-300 dark:bg-gray-600'
+                                        ? 'bg-electric'
+                                        : 'bg-gray-300 dark:bg-gray-600'
                                         }`}
                                 >
                                     <div className={`bg-white w-3 h-3 rounded-full shadow-md transform transition-transform ${notifications[item.key as keyof typeof notifications]
-                                            ? 'translate-x-5'
-                                            : 'translate-x-0'
+                                        ? 'translate-x-5'
+                                        : 'translate-x-0'
                                         }`}></div>
                                 </button>
                             </div>
