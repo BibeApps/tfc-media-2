@@ -31,8 +31,6 @@ const Settings: React.FC = () => {
 
     const [notifications, setNotifications] = useState({
         projectUpdates: user?.notification_project_updates ?? true,
-        messageAlerts: user?.notification_messages ?? true,
-        marketingEmails: user?.notification_marketing ?? true,
         downloadReminders: user?.notification_downloads ?? true
     });
 
@@ -57,8 +55,6 @@ const Settings: React.FC = () => {
             }));
             setNotifications({
                 projectUpdates: user.notification_project_updates ?? true,
-                messageAlerts: user.notification_messages ?? true,
-                marketingEmails: user.notification_marketing ?? true,
                 downloadReminders: user.notification_downloads ?? true
             });
         }
@@ -179,8 +175,6 @@ const Settings: React.FC = () => {
                     <div className="space-y-4">
                         {[
                             { key: 'projectUpdates', label: 'Project Updates' },
-                            { key: 'messageAlerts', label: 'New Message Alerts' },
-                            { key: 'marketingEmails', label: 'Marketing Emails' },
                             { key: 'downloadReminders', label: 'Download Reminders' }
                         ].map(item => (
                             <div key={item.key} className="flex items-center justify-between">
