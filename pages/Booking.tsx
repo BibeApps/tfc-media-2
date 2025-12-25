@@ -143,7 +143,7 @@ const Booking: React.FC = () => {
       return;
     }
 
-    addBooking({
+    const bookingData = {
       clientName: formData.name,
       clientEmail: formData.email,
       serviceType: formData.type,
@@ -152,21 +152,29 @@ const Booking: React.FC = () => {
       endTime: formData.isFullDay ? 'Full Day' : formData.endTime,
       phone: formData.phone,
       notes: formData.notes
-    });
+    };
 
-    // Send booking confirmation email
+    addBooking(bookingData);
+
+    // Send booking notification to admin using new notification service
     try {
+      const { notificationService } = await import('../services/notificationService');
       const timeDisplay = formData.isFullDay
         ? 'Full Day'
         : `${formData.time} - ${formData.endTime}`;
-      await sendBookingConfirmation(
-        formData.email,
-        `${formData.date} (${timeDisplay})`,
-        formData.type
-      );
+
+      await notificationService.sendAdminNotification('booking_created', {
+        bookingId: 'pending', // Will be set when booking is saved to DB
+        serviceType: formData.type,
+        bookingDate: formData.date,
+        bookingTime: timeDisplay,
+        customerName: formData.name,
+        customerEmail: formData.email,
+        customerPhone: formData.phone
+      });
     } catch (emailError) {
-      console.error('Failed to send confirmation email:', emailError);
-      // Don't block booking if email fails
+      console.error('Failed to send booking notification:', emailError);
+      // Don't block booking if notification fails
     }
 
     setStep(3); // Success
