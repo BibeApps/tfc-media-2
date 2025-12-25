@@ -24,9 +24,16 @@ const Settings: React.FC = () => {
         phone: user?.phone || '',
         address: user?.address || '',
         email: user?.email || '',
-        city: 'Los Angeles',
-        state: 'CA',
-        zip: '90012'
+        city: user?.city || '',
+        state: user?.state || '',
+        zip: user?.zip || ''
+    });
+
+    const [notifications, setNotifications] = useState({
+        projectUpdates: user?.notification_project_updates ?? true,
+        messageAlerts: user?.notification_messages ?? true,
+        marketingEmails: user?.notification_marketing ?? true,
+        downloadReminders: user?.notification_downloads ?? true
     });
 
     const [passwordForm, setPasswordForm] = useState({
@@ -48,6 +55,12 @@ const Settings: React.FC = () => {
                 zip: user.zip || '',
                 email: user.email
             }));
+            setNotifications({
+                projectUpdates: user.notification_project_updates ?? true,
+                messageAlerts: user.notification_messages ?? true,
+                marketingEmails: user.notification_marketing ?? true,
+                downloadReminders: user.notification_downloads ?? true
+            });
         }
     }, [user]);
 
@@ -164,13 +177,37 @@ const Settings: React.FC = () => {
                         <Bell className="w-5 h-5 text-cyber" /> Notifications
                     </h2>
                     <div className="space-y-4">
-                        {['Project Updates', 'New Message Alerts', 'Marketing Emails', 'Download Reminders'].map(item => (
-                            <div key={item} className="flex items-center justify-between">
-                                <span className="text-sm text-gray-600 dark:text-gray-300">{item}</span>
-                                <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                                    <input type="checkbox" name="toggle" defaultChecked className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer checked:right-0 checked:border-green-400" />
-                                    <label className="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
-                                </div>
+                        {[
+                            { key: 'projectUpdates', label: 'Project Updates' },
+                            { key: 'messageAlerts', label: 'New Message Alerts' },
+                            { key: 'marketingEmails', label: 'Marketing Emails' },
+                            { key: 'downloadReminders', label: 'Download Reminders' }
+                        ].map(item => (
+                            <div key={item.key} className="flex items-center justify-between">
+                                <span className="text-sm text-gray-600 dark:text-gray-300">{item.label}</span>
+                                <button
+                                    onClick={async () => {
+                                        const newValue = !notifications[item.key as keyof typeof notifications];
+                                        setNotifications(prev => ({ ...prev, [item.key]: newValue }));
+
+                                        // Save to database immediately
+                                        if (user) {
+                                            const dbKey = `notification_${item.key.replace(/([A-Z])/g, '_$1').toLowerCase()}`;
+                                            await updateProfile(user.id, {
+                                                [dbKey]: newValue
+                                            } as any);
+                                        }
+                                    }}
+                                    className={`w-10 h-5 rounded-full flex items-center transition-colors p-1 ${notifications[item.key as keyof typeof notifications]
+                                            ? 'bg-electric'
+                                            : 'bg-gray-300 dark:bg-gray-600'
+                                        }`}
+                                >
+                                    <div className={`bg-white w-3 h-3 rounded-full shadow-md transform transition-transform ${notifications[item.key as keyof typeof notifications]
+                                            ? 'translate-x-5'
+                                            : 'translate-x-0'
+                                        }`}></div>
+                                </button>
                             </div>
                         ))}
                     </div>

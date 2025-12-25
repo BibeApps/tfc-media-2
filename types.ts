@@ -125,6 +125,11 @@ export interface ClientUser {
   total_spent?: number; // DB field name
   memberSince: string;
   member_since?: string; // DB field name
+  // Notification preferences
+  notification_project_updates?: boolean;
+  notification_messages?: boolean;
+  notification_marketing?: boolean;
+  notification_downloads?: boolean;
 }
 
 // Profile type matching Supabase schema

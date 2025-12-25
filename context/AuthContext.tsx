@@ -63,6 +63,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     status: data.status || 'active', // Use status from DB, default to active if missing
     totalSpent: data.total_spent || 0,
     memberSince: data.member_since,
+    // Notification preferences
+    notification_project_updates: data.notification_project_updates ?? true,
+    notification_messages: data.notification_messages ?? true,
+    notification_marketing: data.notification_marketing ?? true,
+    notification_downloads: data.notification_downloads ?? true,
   });
 
   const checkSession = async () => {
@@ -266,6 +271,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (updates.city !== undefined) dbUpdates.city = updates.city;
         if (updates.state !== undefined) dbUpdates.state = updates.state;
         if (updates.zip !== undefined) dbUpdates.zip = updates.zip;
+        // Notification preferences
+        if (updates.notification_project_updates !== undefined) dbUpdates.notification_project_updates = updates.notification_project_updates;
+        if (updates.notification_messages !== undefined) dbUpdates.notification_messages = updates.notification_messages;
+        if (updates.notification_marketing !== undefined) dbUpdates.notification_marketing = updates.notification_marketing;
+        if (updates.notification_downloads !== undefined) dbUpdates.notification_downloads = updates.notification_downloads;
 
         const { error } = await supabase.from('profiles').update(dbUpdates).eq('id', id);
 
