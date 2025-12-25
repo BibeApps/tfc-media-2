@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Wand2, X, Check, Loader2, ArrowRight, ArrowLeft, Image as ImageIcon, Video, DollarSign, Plus, RefreshCw, Trash2, MoveRight } from 'lucide-react';
+import { Upload, Wand2, X, Check, Loader2, ArrowRight, ArrowLeft, Image as ImageIcon, Video, DollarSign, Plus, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -11,22 +11,6 @@ import {
     detectMediaType,
     getImageDimensions,
 } from '../../utils/aiUtils';
-import {
-    checkEventDependencies,
-    checkSubCategoryDependencies,
-    checkCategoryDependencies,
-    deleteEventWithMedia,
-    deleteSubCategory,
-    deleteCategory,
-    moveEvent,
-    moveSubCategory,
-    DependencyCheckResult
-} from '../../utils/galleryDependencies';
-import {
-    DeleteWarningModal,
-    MoveEventModal,
-    MoveSubCategoryModal
-} from '../../components/GalleryModals';
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '');
 
@@ -118,22 +102,6 @@ const GalleryManagerNew: React.FC = () => {
 
     // Step 6: Upload Progress
     const [uploadProgress, setUploadProgress] = useState('');
-
-    // Delete/Move modals state
-    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-    const [deleteModalType, setDeleteModalType] = useState<'event' | 'subcategory' | 'category'>('event');
-    const [deleteModalItem, setDeleteModalItem] = useState<any>(null);
-    const [deleteDependencies, setDeleteDependencies] = useState<DependencyCheckResult | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
-
-    const [moveEventModalOpen, setMoveEventModalOpen] = useState(false);
-    const [moveEventItem, setMoveEventItem] = useState<Event | null>(null);
-    const [isMovingEvent, setIsMovingEvent] = useState(false);
-
-    const [moveSubCategoryModalOpen, setMoveSubCategoryModalOpen] = useState(false);
-    const [moveSubCategoryItem, setMoveSubCategoryItem] = useState<SubCategory | null>(null);
-    const [moveSubCategoryDeps, setMoveSubCategoryDeps] = useState({ events: 0, mediaItems: 0 });
-    const [isMovingSubCategory, setIsMovingSubCategory] = useState(false);
     const [uploadedCount, setUploadedCount] = useState(0);
 
     useEffect(() => {
@@ -714,117 +682,6 @@ const GalleryManagerNew: React.FC = () => {
         setUploadedCount(0);
     };
 
-    // Delete handlers
-    const handleDeleteClick = async (type: 'event' | 'subcategory' | 'category', item: any) => {
-        setDeleteModalType(type);
-        setDeleteModalItem(item);
-
-        // Check dependencies
-        let deps: DependencyCheckResult;
-        if (type === 'event') {
-            deps = await checkEventDependencies(item.id);
-        } else if (type === 'subcategory') {
-            deps = await checkSubCategoryDependencies(item.id);
-        } else {
-            deps = await checkCategoryDependencies(item.id);
-        }
-
-        setDeleteDependencies(deps);
-        setDeleteModalOpen(true);
-    };
-
-    const handleConfirmDelete = async () => {
-        if (!deleteModalItem) return;
-
-        setIsDeleting(true);
-        let result;
-
-        if (deleteModalType === 'event') {
-            result = await deleteEventWithMedia(deleteModalItem.id);
-        } else if (deleteModalType === 'subcategory') {
-            result = await deleteSubCategory(deleteModalItem.id);
-        } else {
-            result = await deleteCategory(deleteModalItem.id);
-        }
-
-        setIsDeleting(false);
-
-        if (result.success) {
-            // Refresh data
-            if (deleteModalType === 'event' && selectedSubCategory) {
-                await fetchEvents(selectedSubCategory.id);
-            } else if (deleteModalType === 'subcategory' && selectedCategory) {
-                await fetchSubCategories(selectedCategory.id);
-                setSelectedSubCategory(null);
-            } else if (deleteModalType === 'category') {
-                await fetchCategories();
-                setSelectedCategory(null);
-            }
-
-            setDeleteModalOpen(false);
-            setDeleteModalItem(null);
-            alert(`${deleteModalType.charAt(0).toUpperCase() + deleteModalType.slice(1)} deleted successfully!`);
-        } else {
-            alert(`Failed to delete: ${result.error}`);
-        }
-    };
-
-    // Move handlers
-    const handleMoveEventClick = (event: Event) => {
-        setMoveEventItem(event);
-        setMoveEventModalOpen(true);
-    };
-
-    const handleConfirmMoveEvent = async (newSubCategoryId: string) => {
-        if (!moveEventItem) return;
-
-        setIsMovingEvent(true);
-        const result = await moveEvent(moveEventItem.id, newSubCategoryId);
-        setIsMovingEvent(false);
-
-        if (result.success) {
-            if (selectedSubCategory) {
-                await fetchEvents(selectedSubCategory.id);
-            }
-            setMoveEventModalOpen(false);
-            setMoveEventItem(null);
-            alert('Event moved successfully!');
-        } else {
-            alert(`Failed to move event: ${result.error}`);
-        }
-    };
-
-    const handleMoveSubCategoryClick = async (subCategory: SubCategory) => {
-        // Get dependency counts
-        const deps = await checkSubCategoryDependencies(subCategory.id);
-        setMoveSubCategoryDeps({
-            events: deps.dependencies.events || 0,
-            mediaItems: deps.dependencies.mediaItems || 0
-        });
-
-        setMoveSubCategoryItem(subCategory);
-        setMoveSubCategoryModalOpen(true);
-    };
-
-    const handleConfirmMoveSubCategory = async (newCategoryId: string) => {
-        if (!moveSubCategoryItem) return;
-
-        setIsMovingSubCategory(true);
-        const result = await moveSubCategory(moveSubCategoryItem.id, newCategoryId);
-        setIsMovingSubCategory(false);
-
-        if (result.success) {
-            if (selectedCategory) {
-                await fetchSubCategories(selectedCategory.id);
-            }
-            setMoveSubCategoryModalOpen(false);
-            setMoveSubCategoryItem(null);
-            alert('Sub category moved successfully!');
-        } else {
-            alert(`Failed to move sub category: ${result.error}`);
-        }
-    };
-
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -935,16 +792,6 @@ const GalleryManagerNew: React.FC = () => {
                                     ✓ Confirmed
                                 </div>
                             )}
-
-                            {categoryConfirmed && selectedCategory && (
-                                <button
-                                    onClick={() => handleDeleteClick('category', selectedCategory)}
-                                    className="w-full mt-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                    Delete Category
-                                </button>
-                            )}
                         </div>
 
                         {/* Sub-Category Card */}
@@ -1029,25 +876,6 @@ const GalleryManagerNew: React.FC = () => {
                             {subCategoryConfirmed && (
                                 <div className="mt-4 px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-700 dark:text-green-400 text-center font-bold">
                                     ✓ Confirmed
-                                </div>
-                            )}
-
-                            {subCategoryConfirmed && selectedSubCategory && (
-                                <div className="flex gap-2 mt-2">
-                                    <button
-                                        onClick={() => handleMoveSubCategoryClick(selectedSubCategory)}
-                                        className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
-                                    >
-                                        <MoveRight className="w-4 h-4" />
-                                        Move
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteClick('subcategory', selectedSubCategory)}
-                                        className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                        Delete
-                                    </button>
                                 </div>
                             )}
                         </div>
@@ -1143,27 +971,7 @@ const GalleryManagerNew: React.FC = () => {
                                 <div className="mt-4 px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-lg text-green-700 dark:text-green-400 text-center font-bold">
                                     ✓ Confirmed
                                 </div>
-                            )}
-
-                            {eventConfirmed && selectedEvent && (
-                                <div className="flex gap-2 mt-2">
-                                    <button
-                                        onClick={() => handleMoveEventClick(selectedEvent)}
-                                        className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
-                                    >
-                                        <MoveRight className="w-4 h-4" />
-                                        Move
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteClick('event', selectedEvent)}
-                                        className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold flex items-center justify-center gap-2"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                        Delete
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                            )}\n                        </div>
                     </div>
 
                     <div className="flex justify-end">
@@ -1566,50 +1374,6 @@ const GalleryManagerNew: React.FC = () => {
                     </div>
                 </motion.div>
             )}
-
-            {/* Delete Warning Modal */}
-            <DeleteWarningModal
-                isOpen={deleteModalOpen}
-                type={deleteModalType}
-                itemName={deleteModalItem?.name || ''}
-                dependencies={deleteDependencies || { canDelete: false, requiresWarning: true, dependencies: {}, message: '' }}
-                onConfirm={handleConfirmDelete}
-                onCancel={() => {
-                    setDeleteModalOpen(false);
-                    setDeleteModalItem(null);
-                }}
-                isDeleting={isDeleting}
-            />
-
-            {/* Move Event Modal */}
-            <MoveEventModal
-                isOpen={moveEventModalOpen}
-                eventName={moveEventItem?.name || ''}
-                currentSubCategoryId={selectedSubCategory?.id || ''}
-                subCategories={subCategories}
-                categories={categories}
-                onMove={handleConfirmMoveEvent}
-                onCancel={() => {
-                    setMoveEventModalOpen(false);
-                    setMoveEventItem(null);
-                }}
-                isMoving={isMovingEvent}
-            />
-
-            {/* Move Sub Category Modal */}
-            <MoveSubCategoryModal
-                isOpen={moveSubCategoryModalOpen}
-                subCategoryName={moveSubCategoryItem?.name || ''}
-                currentCategoryId={selectedCategory?.id || ''}
-                categories={categories}
-                dependencyCounts={moveSubCategoryDeps}
-                onMove={handleConfirmMoveSubCategory}
-                onCancel={() => {
-                    setMoveSubCategoryModalOpen(false);
-                    setMoveSubCategoryItem(null);
-                }}
-                isMoving={isMovingSubCategory}
-            />
         </div>
     );
 };
