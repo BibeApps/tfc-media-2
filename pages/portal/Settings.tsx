@@ -15,6 +15,7 @@ const Settings: React.FC = () => {
     const [tfaEnabled, setTfaEnabled] = useState(false);
     const [showNewPass, setShowNewPass] = useState(false);
     const [showConfirmPass, setShowConfirmPass] = useState(false);
+    const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     // Form States
     const [profileForm, setProfileForm] = useState({
@@ -53,6 +54,7 @@ const Settings: React.FC = () => {
     // Handlers
     const handleSaveProfile = async () => {
         if (!user) return;
+        setSaveMessage(null);
         const { success, message } = await updateProfile(user.id, {
             name: profileForm.name,
             company: profileForm.company,
@@ -62,7 +64,8 @@ const Settings: React.FC = () => {
             state: profileForm.state,
             zip: profileForm.zip
         });
-        alert(message);
+        setSaveMessage({ type: success ? 'success' : 'error', text: message || 'Profile updated' });
+        setTimeout(() => setSaveMessage(null), 5000);
     };
 
     const handleUpdatePassword = async () => {
@@ -142,8 +145,15 @@ const Settings: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                <div className="p-4 bg-gray-50 dark:bg-obsidian/30 text-right">
-                    <button onClick={handleSaveProfile} className="bg-electric text-white px-6 py-2 rounded-lg font-bold hover:bg-electric/90 transition-colors">Save Changes</button>
+                <div className="p-4 bg-gray-50 dark:bg-obsidian/30">
+                    {saveMessage && (
+                        <div className={`mb-4 p-3 rounded-lg ${saveMessage.type === 'success' ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/50' : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/50'}`}>
+                            {saveMessage.text}
+                        </div>
+                    )}
+                    <div className="text-right">
+                        <button onClick={handleSaveProfile} className="bg-electric text-white px-6 py-2 rounded-lg font-bold hover:bg-electric/90 transition-colors">Save Changes</button>
+                    </div>
                 </div>
             </div>
 
