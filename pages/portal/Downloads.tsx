@@ -159,7 +159,7 @@ const Downloads: React.FC = () => {
 
                 const items: DownloadItem[] = paginatedItems.map((row: any) => ({
                     id: row.id,
-                    fileName: row.gallery_items.title + (row.gallery_items.type === 'video' ? '.mp4' : '.jpg'),
+                    fileName: row.gallery_items.title, // Title already contains the full filename with extension
                     fileSize: 'Unknown',
                     format: row.gallery_items.type === 'video' ? 'MP4' : 'JPG',
                     thumbnailUrl: row.gallery_items.watermarked_url,

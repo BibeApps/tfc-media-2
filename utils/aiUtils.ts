@@ -182,12 +182,19 @@ export const uploadOriginalMedia = async (
     eventId: string
 ): Promise<{ url: string; fileName: string }> => {
     try {
+        console.log('=== uploadOriginalMedia START ===');
+        console.log('Input file.name:', file.name);
+
         // Get file extension
         const fileExtension = file.name.split('.').pop() || 'jpg';
+        console.log('Extracted extension:', fileExtension);
 
         // Generate sequential filename
         const fileName = await generateSequentialFileName(eventId, fileExtension);
+        console.log('Generated fileName:', fileName);
+
         const filePath = `session-media/${eventId}/${fileName}`;
+        console.log('Upload filePath:', filePath);
 
         const { data, error } = await supabase.storage
             .from('media')
@@ -201,6 +208,10 @@ export const uploadOriginalMedia = async (
         const { data: urlData } = supabase.storage
             .from('media')
             .getPublicUrl(data.path);
+
+        console.log('Returning URL:', urlData.publicUrl);
+        console.log('Returning fileName:', fileName);
+        console.log('=== uploadOriginalMedia END ===');
 
         return {
             url: urlData.publicUrl,
@@ -278,10 +289,15 @@ export const generateWatermarkedMedia = async (
     fileName: string // Accept the filename from uploadOriginalMedia
 ): Promise<string> => {
     try {
+        console.log('=== generateWatermarkedMedia START ===');
+        console.log('Received fileName:', fileName);
+        console.log('File type:', file.type);
+
         // For images, add watermark using canvas
         if (file.type.startsWith('image/')) {
             const watermarkedBlob = await addWatermarkToImage(file);
             const filePath = `session-media/${eventId}/${fileName}`;
+            console.log('Image watermark filePath:', filePath);
 
             const { data, error } = await supabase.storage
                 .from('watermarked')
@@ -296,12 +312,15 @@ export const generateWatermarkedMedia = async (
                 .from('watermarked')
                 .getPublicUrl(data.path);
 
+            console.log('Watermarked URL:', urlData.publicUrl);
+            console.log('=== generateWatermarkedMedia END ===');
             return urlData.publicUrl;
         } else {
             // For videos, generate and upload thumbnail
             const thumbnailBlob = await generateVideoThumbnail(file);
             // For video thumbnails, replace the video extension with .jpg
             const thumbnailFileName = fileName.replace(/\.[^.]+$/, '.jpg');
+            console.log('Video thumbnail fileName:', thumbnailFileName);
             const filePath = `session-media/${eventId}/${thumbnailFileName}`;
 
             const { data, error } = await supabase.storage
@@ -317,6 +336,8 @@ export const generateWatermarkedMedia = async (
                 .from('watermarked')
                 .getPublicUrl(data.path);
 
+            console.log('Video thumbnail URL:', urlData.publicUrl);
+            console.log('=== generateWatermarkedMedia END ===');
             return urlData.publicUrl;
         }
     } catch (error) {
