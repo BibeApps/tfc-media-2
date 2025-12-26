@@ -3,6 +3,7 @@ import { Search, DollarSign, Calendar, User, RefreshCw, Eye, Loader2, Download, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { PortalOrder, OrderItem } from '../../types';
 import { supabase } from '../../supabaseClient';
+import { formatDate } from '../../utils/dateUtils';
 
 const Orders: React.FC = () => {
     const [orders, setOrders] = useState<PortalOrder[]>([]);
@@ -32,7 +33,7 @@ const Orders: React.FC = () => {
                 id: order.id,
                 client_id: order.client_id,
                 orderNumber: order.order_number,
-                date: new Date(order.created_at).toISOString().split('T')[0],
+                date: formatDate(order.created_at),
                 total: order.total_amount,
                 items: 0, // Will be fetched separately if needed
                 status: order.status,
