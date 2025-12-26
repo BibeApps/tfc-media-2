@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DownloadItem } from '../../types';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../context/AuthContext';
+import { formatDate } from '../../utils/dateUtils';
 
 const Downloads: React.FC = () => {
     const { user } = useAuth();
@@ -165,7 +166,7 @@ const Downloads: React.FC = () => {
                     thumbnailUrl: row.gallery_items.watermarked_url,
                     originalUrl: row.gallery_items.original_url,
                     orderId: row.orders.order_number,
-                    orderDate: new Date(row.orders.created_at).toISOString().split('T')[0],
+                    orderDate: formatDate(row.orders.created_at),
                     downloadsRemaining: 999
                 }));
                 setDownloads(items);

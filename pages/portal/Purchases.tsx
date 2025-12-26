@@ -6,6 +6,7 @@ import { PortalOrder } from '../../types';
 import { supabase } from '../../supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
+import { formatDate } from '../../utils/dateUtils';
 
 const InvoiceModal: React.FC<{ order: PortalOrder; onClose: () => void }> = ({ order, onClose }) => {
     const { settings } = useSettings();
@@ -213,9 +214,9 @@ const Purchases: React.FC = () => {
                 const ordersWithCounts = data.map((order: any) => ({
                     id: order.id,
                     orderNumber: order.order_number,
-                    date: new Date(order.created_at).toISOString().split('T')[0],
+                    date: formatDate(order.created_at),
                     total: order.total_amount,
-                    items: order.order_items?.length || 0,
+                    items: order.order_items?.[0]?.count || 0, // Extract count from aggregation result
                     status: order.status,
                     itemsList: [],
                     expiresAt: 'Lifetime'
