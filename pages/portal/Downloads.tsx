@@ -15,6 +15,9 @@ const Downloads: React.FC = () => {
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [downloading, setDownloading] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const itemsPerPage = 50;
 
     // Modal state
     const [modalOpen, setModalOpen] = useState(false);
@@ -24,9 +27,10 @@ const Downloads: React.FC = () => {
 
     useEffect(() => {
         if (user) {
+            setLoading(true);
             fetchDownloads();
         }
-    }, [user]);
+    }, [user, currentPage]);
 
     // Load image URL when modal opens or index changes
     useEffect(() => {
@@ -91,12 +95,33 @@ const Downloads: React.FC = () => {
 
     const fetchDownloads = async () => {
         try {
-            const { data, error } = await supabase
+            const from = (currentPage - 1) * itemsPerPage;
+            const to = from + itemsPerPage - 1;
+
+            // First, get all order IDs for this user
+            const { data: userOrders } = await supabase
+                .from('orders')
+                .select('id')
+                .eq('client_id', user!.id);
+
+            if (!userOrders || userOrders.length === 0) {
+                setDownloads([]);
+                setTotalCount(0);
+                setLoading(false);
+                return;
+            }
+
+            const orderIds = userOrders.map(o => o.id);
+
+            // Get all order_items for this user
+            const { data: allOrderItems, error } = await supabase
                 .from('order_items')
                 .select(`
                     id,
                     price,
-                    orders!inner (
+                    gallery_item_id,
+                    order_id,
+                    orders (
                         id,
                         order_number,
                         created_at,
@@ -112,12 +137,27 @@ const Downloads: React.FC = () => {
                         height
                     )
                 `)
-                .eq('orders.client_id', user!.id);
+                .in('order_id', orderIds)
+                .order('created_at', { foreignTable: 'orders', ascending: false });
 
             if (error) throw error;
 
-            if (data) {
-                const items: DownloadItem[] = data.map((row: any) => ({
+            if (allOrderItems) {
+                // Deduplicate by gallery_item_id - keep only the first occurrence (most recent order)
+                const uniqueItemsMap = new Map<string, any>();
+                allOrderItems.forEach(item => {
+                    if (!uniqueItemsMap.has(item.gallery_item_id)) {
+                        uniqueItemsMap.set(item.gallery_item_id, item);
+                    }
+                });
+
+                const uniqueItems = Array.from(uniqueItemsMap.values());
+                setTotalCount(uniqueItems.length);
+
+                // Apply pagination to deduplicated items
+                const paginatedItems = uniqueItems.slice(from, to + 1);
+
+                const items: DownloadItem[] = paginatedItems.map((row: any) => ({
                     id: row.id,
                     fileName: row.gallery_items.title + (row.gallery_items.type === 'video' ? '.mp4' : '.jpg'),
                     fileSize: 'Unknown',
@@ -313,58 +353,83 @@ const Downloads: React.FC = () => {
                     <Loader2 className="w-8 h-8 animate-spin text-electric" />
                 </div>
             ) : filteredDownloads.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {filteredDownloads.map((item, index) => (
-                        <div key={item.id} className="bg-white dark:bg-charcoal p-4 rounded-xl border border-gray-200 dark:border-white/5 flex gap-4 hover:border-electric/50 transition-colors group">
-                            <div className="flex items-center">
-                                <button
-                                    onClick={() => toggleSelection(item.id)}
-                                    className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded transition-colors"
-                                >
-                                    {selectedItems.has(item.id) ? (
-                                        <CheckSquare className="w-5 h-5 text-electric" />
-                                    ) : (
-                                        <Square className="w-5 h-5 text-gray-400" />
-                                    )}
-                                </button>
-                            </div>
-
-                            <div
-                                onClick={() => openModal(index)}
-                                className="w-20 h-20 bg-gray-100 dark:bg-black rounded-lg overflow-hidden flex-shrink-0 relative cursor-pointer hover:ring-2 hover:ring-electric transition-all"
-                            >
-                                <img src={item.thumbnailUrl} className="w-full h-full object-cover" alt="" />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {item.format === 'MP4' ? <FileVideo className="w-8 h-8 text-white" /> : <FileImage className="w-8 h-8 text-white" />}
-                                </div>
-                            </div>
-
-                            <div className="flex-1 flex flex-col justify-between">
-                                <div>
-                                    <h4 className="font-bold text-gray-900 dark:text-white text-sm line-clamp-1" title={item.fileName}>{item.fileName}</h4>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        {item.format} • Order #{item.orderId}
-                                    </p>
-                                </div>
-
-                                <div className="flex items-center justify-between mt-2">
-                                    <div className="flex items-center gap-1 text-xs text-green-500 font-medium">
-                                        <Clock className="w-3 h-3" />
-                                        Ready
-                                    </div>
-
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {filteredDownloads.map((item, index) => (
+                            <div key={item.id} className="bg-white dark:bg-charcoal p-4 rounded-xl border border-gray-200 dark:border-white/5 flex gap-4 hover:border-electric/50 transition-colors group">
+                                <div className="flex items-center">
                                     <button
-                                        onClick={() => handleDownload(item)}
-                                        className="flex items-center gap-1 px-3 py-1.5 bg-electric hover:bg-electric/90 text-white rounded-lg text-xs font-bold transition-colors"
+                                        onClick={() => toggleSelection(item.id)}
+                                        className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded transition-colors"
                                     >
-                                        <Download className="w-3 h-3" />
-                                        Download
+                                        {selectedItems.has(item.id) ? (
+                                            <CheckSquare className="w-5 h-5 text-electric" />
+                                        ) : (
+                                            <Square className="w-5 h-5 text-gray-400" />
+                                        )}
                                     </button>
                                 </div>
+
+                                <div
+                                    onClick={() => openModal(index)}
+                                    className="w-20 h-20 bg-gray-100 dark:bg-black rounded-lg overflow-hidden flex-shrink-0 relative cursor-pointer hover:ring-2 hover:ring-electric transition-all"
+                                >
+                                    <img src={item.thumbnailUrl} className="w-full h-full object-cover" alt="" />
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {item.format === 'MP4' ? <FileVideo className="w-8 h-8 text-white" /> : <FileImage className="w-8 h-8 text-white" />}
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 dark:text-white text-sm line-clamp-1" title={item.fileName}>{item.fileName}</h4>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            {item.format} • Order #{item.orderId}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex items-center justify-between mt-2">
+                                        <div className="flex items-center gap-1 text-xs text-green-500 font-medium">
+                                            <Clock className="w-3 h-3" />
+                                            Ready
+                                        </div>
+
+                                        <button
+                                            onClick={() => handleDownload(item)}
+                                            className="flex items-center gap-1 px-3 py-1.5 bg-electric hover:bg-electric/90 text-white rounded-lg text-xs font-bold transition-colors"
+                                        >
+                                            <Download className="w-3 h-3" />
+                                            Download
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
+                        ))}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {!orderFilter && totalCount > itemsPerPage && (
+                        <div className="flex items-center justify-center gap-4 mt-8">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-white/20 hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Previous
+                            </button>
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                                Page {currentPage} of {Math.ceil(totalCount / itemsPerPage)} ({totalCount} total items)
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / itemsPerPage), prev + 1))}
+                                disabled={currentPage >= Math.ceil(totalCount / itemsPerPage)}
+                                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-white/20 hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Next
+                            </button>
                         </div>
-                    ))}
-                </div>
+                    )}
+                </>
             ) : (
                 <div className="text-center py-20">
                     <FileImage className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />

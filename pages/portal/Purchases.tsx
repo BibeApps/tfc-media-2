@@ -193,32 +193,32 @@ const Purchases: React.FC = () => {
 
     const fetchOrders = async () => {
         try {
+            // Optimized: Single query with order_items count using aggregation
             const { data, error } = await supabase
                 .from('orders')
-                .select('*')
+                .select(`
+                    id,
+                    order_number,
+                    created_at,
+                    total_amount,
+                    status,
+                    order_items (count)
+                `)
                 .eq('client_id', user!.id)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
 
             if (data) {
-                // Fetch item counts for each order
-                const ordersWithCounts = await Promise.all(data.map(async (order: any) => {
-                    const { count } = await supabase
-                        .from('order_items')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('order_id', order.id);
-
-                    return {
-                        id: order.id,
-                        orderNumber: order.order_number,
-                        date: new Date(order.created_at).toISOString().split('T')[0],
-                        total: order.total_amount,
-                        items: count || 0,
-                        status: order.status,
-                        itemsList: [],
-                        expiresAt: 'Lifetime' // Or calculate 30 days from date
-                    };
+                const ordersWithCounts = data.map((order: any) => ({
+                    id: order.id,
+                    orderNumber: order.order_number,
+                    date: new Date(order.created_at).toISOString().split('T')[0],
+                    total: order.total_amount,
+                    items: order.order_items?.length || 0,
+                    status: order.status,
+                    itemsList: [],
+                    expiresAt: 'Lifetime'
                 }));
                 setOrders(ordersWithCounts);
             }
