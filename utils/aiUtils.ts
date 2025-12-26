@@ -133,6 +133,45 @@ export const uploadThumbnail = async (
         console.error('Error uploading thumbnail:', error);
         throw error;
     }
+}
+
+/**
+ * Generate sequential filename based on event name
+ */
+export const generateSequentialFileName = async (
+    eventId: string,
+    fileExtension: string
+): Promise<string> => {
+    try {
+        // Get event/session name
+        const { data: session, error: sessionError } = await supabase
+            .from('sessions')
+            .select('name')
+            .eq('id', eventId)
+            .single();
+
+        if (sessionError) throw sessionError;
+
+        // Count existing files for this event
+        const { count, error: countError } = await supabase
+            .from('gallery_items')
+            .select('*', { count: 'exact', head: true })
+            .eq('session_id', eventId);
+
+        if (countError) throw countError;
+
+        // Format name: "Event_Name_1.jpg"
+        const eventName = session.name
+            .replace(/\s+/g, '_')
+            .replace(/[^a-zA-Z0-9_]/g, '');
+        const sequenceNumber = (count || 0) + 1;
+
+        return `${eventName}_${sequenceNumber}.${fileExtension}`;
+    } catch (error) {
+        console.error('Error generating sequential filename:', error);
+        // Fallback to timestamp-based naming
+        return `${Date.now()}.${fileExtension}`;
+    }
 };
 
 /**
@@ -143,7 +182,11 @@ export const uploadOriginalMedia = async (
     eventId: string
 ): Promise<string> => {
     try {
-        const fileName = `${Date.now()}-${file.name}`;
+        // Get file extension
+        const fileExtension = file.name.split('.').pop() || 'jpg';
+
+        // Generate sequential filename
+        const fileName = await generateSequentialFileName(eventId, fileExtension);
         const filePath = `session-media/${eventId}/${fileName}`;
 
         const { data, error } = await supabase.storage
@@ -167,18 +210,76 @@ export const uploadOriginalMedia = async (
 };
 
 /**
+ * Generate thumbnail from video file
+ */
+export const generateVideoThumbnail = async (videoFile: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
+
+        video.onloadedmetadata = () => {
+            // Seek to 2 seconds or 10% of duration, whichever is smaller
+            video.currentTime = Math.min(2, video.duration * 0.1);
+        };
+
+        video.onseeked = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Failed to get canvas context'));
+                    return;
+                }
+
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                canvas.toBlob(
+                    (blob) => {
+                        URL.revokeObjectURL(video.src);
+                        if (blob) {
+                            resolve(blob);
+                        } else {
+                            reject(new Error('Failed to generate thumbnail blob'));
+                        }
+                    },
+                    'image/jpeg',
+                    0.8
+                );
+            } catch (error) {
+                URL.revokeObjectURL(video.src);
+                reject(error);
+            }
+        };
+
+        video.onerror = () => {
+            URL.revokeObjectURL(video.src);
+            reject(new Error('Failed to load video'));
+        };
+
+        video.src = URL.createObjectURL(videoFile);
+    });
+};
+
+/**
  * Generate and upload watermarked version
+ * For videos, generates and uploads a thumbnail instead of the full video
  */
 export const generateWatermarkedMedia = async (
     file: File,
     eventId: string
 ): Promise<string> => {
     try {
+        const fileExtension = file.name.split('.').pop() || 'jpg';
+        const fileName = await generateSequentialFileName(eventId, fileExtension);
+
         // For images, add watermark using canvas
         if (file.type.startsWith('image/')) {
             const watermarkedBlob = await addWatermarkToImage(file);
-
-            const fileName = `${Date.now()}-${file.name}`;
             const filePath = `session-media/${eventId}/${fileName}`;
 
             const { data, error } = await supabase.storage
@@ -196,13 +297,14 @@ export const generateWatermarkedMedia = async (
 
             return urlData.publicUrl;
         } else {
-            // For videos, upload as-is (watermarking videos requires server-side processing)
-            const fileName = `${Date.now()}-${file.name}`;
-            const filePath = `session-media/${eventId}/${fileName}`;
+            // For videos, generate and upload thumbnail
+            const thumbnailBlob = await generateVideoThumbnail(file);
+            const thumbnailFileName = fileName.replace(/\.[^.]+$/, '.jpg'); // Replace extension with .jpg
+            const filePath = `session-media/${eventId}/${thumbnailFileName}`;
 
             const { data, error } = await supabase.storage
                 .from('watermarked')
-                .upload(filePath, file, {
+                .upload(filePath, thumbnailBlob, {
                     cacheControl: '3600',
                     upsert: false,
                 });

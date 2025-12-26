@@ -218,19 +218,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const requestPasswordReset = async (email: string) => {
-    if (email === 'admin@tfcmedia.com' || email === 'alex.doe@example.com') {
-      return { success: true, message: 'Reset instructions sent to email (Demo).' };
-    }
+
 
     if (isConfigured) {
       try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        console.log('Requesting password reset for:', email);
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: window.location.origin + '/#/reset-password',
         });
+
+        console.log('Password reset response:', { data, error });
 
         if (error) throw error;
         return { success: true, message: 'Reset instructions sent to email.' };
       } catch (err: any) {
+        console.error('Password reset error:', err);
         return { success: false, message: err.message || 'Failed to send reset email.' };
       }
     }

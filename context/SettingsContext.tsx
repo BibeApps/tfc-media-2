@@ -49,7 +49,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
                 .from('site_settings')
                 .select('*')
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (error) throw error;
 
