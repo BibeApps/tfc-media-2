@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { formatPhoneNumber } from '../../utils/phoneFormatter';
-import { Search, Plus, X, Mail, Phone, Building, DollarSign, ShoppingBag, Calendar, Edit, Trash2, Loader2, UserPlus, Shield, User } from 'lucide-react';
+import { Search, Plus, X, Mail, Phone, Building, DollarSign, ShoppingBag, Calendar, Edit, Trash2, Loader2, UserPlus, Shield, User, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import { createUser } from '../../utils/userManagement';
@@ -30,8 +30,10 @@ const Clients: React.FC = () => {
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
+    const [isResettingPassword, setIsResettingPassword] = useState(false);
     const [formData, setFormData] = useState<Partial<Client>>({});
     const [createdPassword, setCreatedPassword] = useState<string | null>(null);
+    const [resetPassword, setResetPassword] = useState<string | null>(null);
     const [addUserData, setAddUserData] = useState({
         email: '',
         name: '',

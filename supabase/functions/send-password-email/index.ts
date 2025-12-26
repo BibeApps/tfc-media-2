@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, name, tempPassword } = await req.json()
+    const { email, name, tempPassword, isReset } = await req.json()
 
     // Get Resend API key from environment
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
@@ -20,6 +20,16 @@ serve(async (req) => {
     if (!RESEND_API_KEY) {
       throw new Error('RESEND_API_KEY not configured')
     }
+
+    // Determine email subject and content based on context
+    const subject = isReset
+      ? 'Your TFC Media Password Has Been Reset'
+      : 'Your TFC Media Account - Temporary Password'
+
+    const headerTitle = isReset ? 'Password Reset' : 'Welcome to TFC Media'
+    const introText = isReset
+      ? 'Your password has been reset by an administrator. Below is your new temporary password.'
+      : 'Your account has been created by an administrator. Below is your temporary password to access your account.'
 
     // Send email using Resend
     const res = await fetch('https://api.resend.com/emails', {
@@ -31,7 +41,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'TFC Media <noreply@tfcmediagroup.com>',
         to: [email],
-        subject: 'Your TFC Media Account - Temporary Password',
+        subject: subject,
         html: `
           <!DOCTYPE html>
           <html>
@@ -51,12 +61,12 @@ serve(async (req) => {
             <body>
               <div class="container">
                 <div class="header">
-                  <h1>Welcome to TFC Media</h1>
+                  <h1>${headerTitle}</h1>
                 </div>
                 <div class="content">
                   <p>Dear ${name},</p>
                   
-                  <p>Your account has been created by an administrator. Below is your temporary password to access your account.</p>
+                  <p>${introText}</p>
                   
                   <div class="password-box">
                     <p style="margin: 0; font-size: 14px; color: #666;">Temporary Password</p>
@@ -64,13 +74,12 @@ serve(async (req) => {
                   </div>
                   
                   <div class="warning">
-                    <strong>⚠️ IMPORTANT:</strong> This temporary password will expire in 48 hours. You will be required to change your password upon first login.
+                    <strong>⚠️ IMPORTANT:</strong> For security reasons, please change this password immediately after logging in.
                   </div>
                   
                   <p><strong>Next Steps:</strong></p>
                   <ol>
-                    <li>Check your email for a confirmation link from Supabase</li>
-                    <li>Click the confirmation link to verify your email</li>
+                    ${isReset ? '' : '<li>Check your email for a confirmation link from Supabase</li><li>Click the confirmation link to verify your email</li>'}
                     <li>Visit the login page and use your email and temporary password above</li>
                     <li>You'll be prompted to create a new password</li>
                   </ol>
