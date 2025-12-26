@@ -281,11 +281,28 @@ const CartDrawer: React.FC = () => {
       // 4. Clear cart
       await clearCart();
 
-      // 5. Close cart drawer and payment modal
+      // 5. Send order placed notification to client
+      try {
+        const { notificationService } = await import('../services/notificationService');
+        await notificationService.sendNotification('order_placed', user.id, {
+          orderNumber: orderNumber,
+          total: total,
+          items: items.map(item => ({
+            name: item.title,
+            quantity: 1,
+            price: item.price
+          }))
+        });
+      } catch (notifError) {
+        console.error('Failed to send order notification:', notifError);
+        // Don't block checkout if notification fails
+      }
+
+      // 6. Close cart drawer and payment modal
       setIsOpen(false);
       setShowPaymentModal(false);
 
-      // 6. Show success message and redirect
+      // 7. Show success message and redirect
       alert(`Order ${orderNumber} placed successfully! Total: $${total.toFixed(2)}`);
       navigate('/portal/purchases?success=true');
 

@@ -739,37 +739,6 @@ const Settings: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* SMS Settings */}
-                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-green-500/10 rounded-lg">
-                                    <MessageSquare className="w-6 h-6 text-green-500" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">SMS Notifications</h3>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Enable or disable SMS notifications via Twilio</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Enable SMS Notifications</label>
-                                    <input
-                                        type="checkbox"
-                                        checked={notificationSettings.sms_enabled}
-                                        onChange={(e) => setNotificationSettings({ ...notificationSettings, sms_enabled: e.target.checked })}
-                                        className="w-5 h-5 text-electric rounded focus:ring-electric"
-                                    />
-                                </div>
-
-                                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/50 rounded-lg p-4">
-                                    <p className="text-sm text-blue-700 dark:text-blue-400">
-                                        <strong>Note:</strong> Twilio credentials are configured in environment variables (.env file).
-                                        SMS will only work if valid Twilio credentials are set.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Notification Events */}
                         <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">

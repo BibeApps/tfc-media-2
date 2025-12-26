@@ -124,12 +124,48 @@ const Bookings: React.FC = () => {
 
     const updateBookingStatus = async (id: string, status: BookingStatus) => {
         try {
+            // Get booking details before updating
+            const { data: booking, error: fetchError } = await supabase
+                .from('bookings')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (fetchError) throw fetchError;
+
+            // Update booking status
             const { error } = await supabase
                 .from('bookings')
                 .update({ status })
                 .eq('id', id);
 
             if (error) throw error;
+
+            // Send notification if booking is confirmed
+            if (status === 'confirmed' && booking) {
+                try {
+                    // Get user ID from email
+                    const { data: user } = await supabase
+                        .from('profiles')
+                        .select('id')
+                        .eq('email', booking.client_email)
+                        .single();
+
+                    if (user) {
+                        const { notificationService } = await import('../../services/notificationService');
+                        await notificationService.sendNotification('booking_confirmed', user.id, {
+                            bookingId: booking.id,
+                            serviceType: booking.service_type,
+                            confirmedDate: booking.booking_date,
+                            confirmedTime: booking.booking_time
+                        });
+                    }
+                } catch (notifError) {
+                    console.error('Failed to send booking confirmation notification:', notifError);
+                    // Don't block status update if notification fails
+                }
+            }
+
             fetchBookings();
         } catch (err) {
             console.error('Error updating booking:', err);

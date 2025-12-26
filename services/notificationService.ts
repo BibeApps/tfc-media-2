@@ -1,6 +1,5 @@
 import { supabase } from '../supabaseClient';
 import { resend, isResendConfigured } from './resendClient';
-import { twilioClient, isTwilioConfigured } from './twilioClient';
 import { orderPlacedTemplate } from './emailTemplates/orderPlaced';
 import { bookingCreatedTemplate } from './emailTemplates/bookingCreated';
 import { orderCompletedTemplate } from './emailTemplates/orderCompleted';
@@ -186,22 +185,28 @@ class NotificationService {
     }
 
     /**
-     * Send SMS notification
+     * Send SMS notification via Supabase Edge Function
      */
     private async sendSMS(to: string, message: string, fromNumber: string): Promise<boolean> {
-        if (!isTwilioConfigured()) {
-            console.error('Twilio is not configured. Cannot send SMS.');
-            return false;
-        }
-
         try {
-            const result = await twilioClient!.messages.create({
-                body: message,
-                from: fromNumber,
-                to: to,
+            const { data, error } = await supabase.functions.invoke('send-sms', {
+                body: {
+                    to: to,
+                    message: message,
+                },
             });
 
-            console.log('SMS sent successfully:', result.sid);
+            if (error) {
+                console.error('Error calling send-sms function:', error);
+                return false;
+            }
+
+            if (!data.success) {
+                console.error('SMS sending failed:', data.error);
+                return false;
+            }
+
+            console.log('SMS sent successfully:', data.messageSid);
             return true;
         } catch (err) {
             console.error('Error in sendSMS:', err);
