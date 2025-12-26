@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Loader2, Building2, Globe, Clock, Mail, MessageSquare, Bell, Upload, Image as ImageIcon, X, Calendar, CreditCard, Image, Users, Shield, User, Edit, Trash2 } from 'lucide-react';
+import { Save, Loader2, Building2, Globe, Clock, Mail, MessageSquare, Bell, Upload, Image as ImageIcon, X, Calendar, CreditCard, Image, Users, Shield, User, Edit, Trash2, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import { formatPhoneNumber } from '../../utils/phoneFormatter';
@@ -101,6 +101,8 @@ const Settings: React.FC = () => {
     const [isAddingAdmin, setIsAddingAdmin] = useState(false);
     const [adminFormData, setAdminFormData] = useState<any>({});
     const [createdAdminPassword, setCreatedAdminPassword] = useState<string | null>(null);
+    const [isResettingPassword, setIsResettingPassword] = useState(false);
+    const [resetPassword, setResetPassword] = useState<string | null>(null);
     const [addAdminData, setAddAdminData] = useState({
         email: '',
         name: '',
@@ -325,6 +327,29 @@ const Settings: React.FC = () => {
             zip: '',
             country: 'USA'
         });
+    };
+
+    const handleResetAdminPassword = async (admin: any) => {
+        if (!window.confirm(`Reset password for ${admin.name}? They will receive an email with a temporary password.`)) return;
+
+        try {
+            setLoadingAdmins(true);
+            const { data, error } = await supabase.functions.invoke('reset-user-password', {
+                body: { userId: admin.id }
+            });
+
+            if (error) throw error;
+            if (!data.success) throw new Error(data.error || 'Failed to reset password');
+
+            setSelectedAdmin(admin);
+            setResetPassword(data.tempPassword);
+            setIsResettingPassword(true);
+        } catch (err: any) {
+            console.error('Error resetting password:', err);
+            alert(`Failed to reset password: ${err.message || 'Unknown error'}`);
+        } finally {
+            setLoadingAdmins(false);
+        }
     };
 
     const handleLogoUpload = async (file: File) => {
@@ -1525,8 +1550,16 @@ const Settings: React.FC = () => {
                                                             <button
                                                                 onClick={() => handleEditAdmin(admin)}
                                                                 className="p-2 text-gray-600 dark:text-gray-400 hover:text-electric hover:bg-electric/10 rounded-lg transition-colors"
+                                                                title="Edit Admin"
                                                             >
                                                                 <Edit className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleResetAdminPassword(admin)}
+                                                                className="p-2 text-gray-600 dark:text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors"
+                                                                title="Reset Password"
+                                                            >
+                                                                <Key className="w-4 h-4" />
                                                             </button>
                                                             {admin.email !== 'admin@tfcmedia.com' && (
                                                                 <button
@@ -1551,6 +1584,7 @@ const Settings: React.FC = () => {
                                                                         }, 0);
                                                                     }}
                                                                     className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                                    title="Delete Admin"
                                                                 >
                                                                     <Trash2 className="w-4 h-4" />
                                                                 </button>
@@ -1861,6 +1895,94 @@ const Settings: React.FC = () => {
                                                 ) : (
                                                     'Save Changes'
                                                 )}
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Reset Password Modal */}
+                        <AnimatePresence>
+                            {isResettingPassword && selectedAdmin && resetPassword && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        className="bg-white dark:bg-charcoal w-full max-w-lg rounded-xl shadow-2xl"
+                                    >
+                                        <div className="p-6 border-b border-gray-200 dark:border-white/10 flex items-center justify-between">
+                                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Password Reset Successful</h3>
+                                            <button
+                                                onClick={() => {
+                                                    setIsResettingPassword(false);
+                                                    setResetPassword(null);
+                                                    setSelectedAdmin(null);
+                                                }}
+                                                className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                                            >
+                                                <X className="w-5 h-5" />
+                                            </button>
+                                        </div>
+
+                                        <div className="p-6 space-y-6">
+                                            <div className="text-center">
+                                                <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                    <Key className="w-8 h-8 text-amber-500" />
+                                                </div>
+                                                <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                                    Password Reset for {selectedAdmin.name}
+                                                </h4>
+                                                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                                                    An email with the temporary password has been sent to <strong>{selectedAdmin.email}</strong>
+                                                </p>
+                                            </div>
+
+                                            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg p-4">
+                                                <div className="flex items-start gap-3">
+                                                    <Key className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                                    <div className="flex-1">
+                                                        <p className="font-bold text-amber-900 dark:text-amber-200 mb-2">Temporary Password</p>
+                                                        <p className="text-sm text-amber-800 dark:text-amber-300 mb-3">
+                                                            Save this password securely. The user should change it upon first login.
+                                                        </p>
+                                                        <div className="bg-white dark:bg-obsidian rounded-lg p-3 font-mono text-lg font-bold text-gray-900 dark:text-white border border-amber-300 dark:border-amber-500/30 flex items-center justify-between">
+                                                            <span>{resetPassword}</span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(resetPassword);
+                                                                    alert('Password copied to clipboard!');
+                                                                }}
+                                                                className="ml-2 p-2 hover:bg-amber-100 dark:hover:bg-amber-500/20 rounded transition-colors"
+                                                                title="Copy to clipboard"
+                                                            >
+                                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-lg p-4">
+                                                <p className="text-sm text-blue-800 dark:text-blue-300">
+                                                    <strong>Note:</strong> The user has been notified via email and should change this password immediately after logging in.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6 border-t border-gray-200 dark:border-white/10 flex justify-end">
+                                            <button
+                                                onClick={() => {
+                                                    setIsResettingPassword(false);
+                                                    setResetPassword(null);
+                                                    setSelectedAdmin(null);
+                                                }}
+                                                className="px-6 py-2 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold transition-colors"
+                                            >
+                                                Done
                                             </button>
                                         </div>
                                     </motion.div>
