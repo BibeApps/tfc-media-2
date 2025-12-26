@@ -55,6 +55,7 @@ const Clients: React.FC = () => {
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
+                .eq('role', 'client') // Only fetch client users, exclude admins
                 .order('member_since', { ascending: false });
 
             if (error) throw error;
@@ -198,8 +199,8 @@ const Clients: React.FC = () => {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
-                    <p className="text-gray-600 dark:text-gray-400">Manage clients and admin users</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Client Management</h1>
+                    <p className="text-gray-600 dark:text-gray-400">Manage client accounts</p>
                 </div>
                 <button
                     onClick={() => setIsAdding(true)}
@@ -268,7 +269,6 @@ const Clients: React.FC = () => {
                 >
                     <option value="all">All Roles</option>
                     <option value="client">Clients</option>
-                    <option value="admin">Admins</option>
                 </select>
                 <select
                     value={statusFilter}

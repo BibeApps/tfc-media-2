@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Loader2, Building2, Globe, Clock, Mail, MessageSquare, Bell, Upload, Image as ImageIcon, X, Calendar, CreditCard, Image } from 'lucide-react';
+import { Save, Loader2, Building2, Globe, Clock, Mail, MessageSquare, Bell, Upload, Image as ImageIcon, X, Calendar, CreditCard, Image, Users, Shield, User, Edit, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import { formatPhoneNumber } from '../../utils/phoneFormatter';
@@ -72,7 +72,7 @@ interface NotificationSettings {
     };
 }
 
-type TabType = 'general' | 'notifications' | 'booking' | 'payment' | 'gallery';
+type TabType = 'general' | 'notifications' | 'booking' | 'payment' | 'gallery' | 'admins';
 
 const TIMEZONES = [
     'America/New_York',
@@ -93,6 +93,8 @@ const Settings: React.FC = () => {
     const [uploading, setUploading] = useState(false);
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [dragActive, setDragActive] = useState(false);
+    const [adminUsers, setAdminUsers] = useState<any[]>([]);
+    const [loadingAdmins, setLoadingAdmins] = useState(false);
 
     useEffect(() => {
         fetchSettings();
@@ -201,6 +203,31 @@ const Settings: React.FC = () => {
             setLoading(false);
         }
     };
+
+    const fetchAdmins = async () => {
+        try {
+            setLoadingAdmins(true);
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('role', 'admin')
+                .order('member_since', { ascending: false });
+
+            if (error) throw error;
+            setAdminUsers(data || []);
+        } catch (err) {
+            console.error('Error fetching admins:', err);
+        } finally {
+            setLoadingAdmins(false);
+        }
+    };
+
+    // Fetch admins when Admins tab is active
+    useEffect(() => {
+        if (activeTab === 'admins') {
+            fetchAdmins();
+        }
+    }, [activeTab]);
 
     const handleLogoUpload = async (file: File) => {
         if (!siteSettings) return;
@@ -407,6 +434,16 @@ const Settings: React.FC = () => {
                     >
                         <Image className="w-5 h-5" />
                         Gallery
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('admins')}
+                        className={`flex items-center gap-2 px-4 py-3 border-b-2 font-bold transition-colors ${activeTab === 'admins'
+                            ? 'border-electric text-electric'
+                            : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                            }`}
+                    >
+                        <Users className="w-5 h-5" />
+                        Admins
                     </button>
                 </nav>
             </div>
@@ -1297,6 +1334,111 @@ const Settings: React.FC = () => {
                                         </div>
                                     </>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'admins' && (
+                    <div className="space-y-6">
+                        {/* Admin Users Table */}
+                        <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-purple-500/10 rounded-lg">
+                                    <Shield className="w-6 h-6 text-purple-500" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Admin Users</h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Manage administrator accounts</p>
+                                </div>
+                            </div>
+
+                            {loadingAdmins ? (
+                                <div className="flex justify-center py-12">
+                                    <Loader2 className="w-8 h-8 animate-spin text-electric" />
+                                </div>
+                            ) : adminUsers.length === 0 ? (
+                                <div className="text-center py-12 text-gray-500">
+                                    <Shield className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                    No admin users found
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50 dark:bg-obsidian border-b border-gray-200 dark:border-white/10">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Admin</th>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact</th>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Company</th>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Member Since</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200 dark:divide-white/10">
+                                            {adminUsers.map((admin) => (
+                                                <tr key={admin.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-2 bg-purple-500/10 rounded-lg">
+                                                                <Shield className="w-5 h-5 text-purple-500" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-gray-900 dark:text-white">{admin.name || 'N/A'}</p>
+                                                                <p className="text-sm text-gray-500">{admin.city}, {admin.state}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                                <Mail className="w-4 h-4" />
+                                                                {admin.email}
+                                                            </div>
+                                                            {admin.phone && (
+                                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                                    <Globe className="w-4 h-4" />
+                                                                    {admin.phone}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                                            <Building2 className="w-4 h-4" />
+                                                            {admin.company || 'N/A'}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${admin.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' :
+                                                                admin.status === 'inactive' ? 'bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-400' :
+                                                                    'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400'
+                                                            }`}>
+                                                            {admin.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                                                            {admin.member_since ? new Date(admin.member_since).toLocaleDateString() : 'N/A'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-500/10 rounded-lg border border-blue-200 dark:border-blue-500/20">
+                                <div className="flex items-start gap-3">
+                                    <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="font-bold text-blue-900 dark:text-blue-200 mb-1">Admin User Management</p>
+                                        <p className="text-sm text-blue-800 dark:text-blue-300">
+                                            To add new admin users, go to <strong>Admin → Clients</strong> page and use the "Add User" button.
+                                            Select "Admin" as the role when creating the user.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
