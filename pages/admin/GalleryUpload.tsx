@@ -113,10 +113,10 @@ const GalleryUpload: React.FC = () => {
             const { uploadOriginalMedia, generateWatermarkedMedia } = await import('../../utils/aiUtils');
 
             // Upload original to media bucket
-            const originalUrl = await uploadOriginalMedia(uploadFile.file, sessionId!);
+            const { url: originalUrl, fileName: storedFileName } = await uploadOriginalMedia(uploadFile.file, sessionId!);
 
-            // Generate and upload watermarked version to watermarked bucket
-            const watermarkedUrl = await generateWatermarkedMedia(uploadFile.file, sessionId!);
+            // Generate and upload watermarked version to watermarked bucket using the same filename
+            const watermarkedUrl = await generateWatermarkedMedia(uploadFile.file, sessionId!, storedFileName);
 
             // Create gallery item record with proper URLs
             const { error: dbError } = await supabase

@@ -635,17 +635,17 @@ const GalleryManagerNew: React.FC = () => {
                 setUploadProgress(`Uploading ${i + 1} of ${mediaFiles.length}...`);
 
                 // Upload original
-                const originalUrl = await uploadOriginalMedia(mediaFile.file, eventId);
+                const { url: originalUrl, fileName: storedFileName } = await uploadOriginalMedia(mediaFile.file, eventId);
 
-                // Generate and upload watermarked version
-                const watermarkedUrl = await generateWatermarkedMedia(mediaFile.file, eventId);
+                // Generate and upload watermarked version using the same filename
+                const watermarkedUrl = await generateWatermarkedMedia(mediaFile.file, eventId, storedFileName);
 
                 // Save to database
                 await supabase
                     .from('gallery_items')
                     .insert([{
                         session_id: eventId,
-                        title: mediaFile.name,
+                        title: storedFileName, // Use the filename from uploadOriginalMedia
                         type: mediaFile.type,
                         watermarked_url: watermarkedUrl,
                         original_url: originalUrl,

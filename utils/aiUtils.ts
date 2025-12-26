@@ -180,7 +180,7 @@ export const generateSequentialFileName = async (
 export const uploadOriginalMedia = async (
     file: File,
     eventId: string
-): Promise<string> => {
+): Promise<{ url: string; fileName: string }> => {
     try {
         // Get file extension
         const fileExtension = file.name.split('.').pop() || 'jpg';
@@ -202,7 +202,10 @@ export const uploadOriginalMedia = async (
             .from('media')
             .getPublicUrl(data.path);
 
-        return urlData.publicUrl;
+        return {
+            url: urlData.publicUrl,
+            fileName: fileName
+        };
     } catch (error) {
         console.error('Error uploading original media:', error);
         throw error;
@@ -271,12 +274,10 @@ export const generateVideoThumbnail = async (videoFile: File): Promise<Blob> => 
  */
 export const generateWatermarkedMedia = async (
     file: File,
-    eventId: string
+    eventId: string,
+    fileName: string // Accept the filename from uploadOriginalMedia
 ): Promise<string> => {
     try {
-        const fileExtension = file.name.split('.').pop() || 'jpg';
-        const fileName = await generateSequentialFileName(eventId, fileExtension);
-
         // For images, add watermark using canvas
         if (file.type.startsWith('image/')) {
             const watermarkedBlob = await addWatermarkToImage(file);
@@ -299,7 +300,8 @@ export const generateWatermarkedMedia = async (
         } else {
             // For videos, generate and upload thumbnail
             const thumbnailBlob = await generateVideoThumbnail(file);
-            const thumbnailFileName = fileName.replace(/\.[^.]+$/, '.jpg'); // Replace extension with .jpg
+            // For video thumbnails, replace the video extension with .jpg
+            const thumbnailFileName = fileName.replace(/\.[^.]+$/, '.jpg');
             const filePath = `session-media/${eventId}/${thumbnailFileName}`;
 
             const { data, error } = await supabase.storage
