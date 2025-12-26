@@ -1520,6 +1520,43 @@ const Settings: React.FC = () => {
                                                             {admin.member_since ? new Date(admin.member_since).toLocaleDateString() : 'N/A'}
                                                         </span>
                                                     </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => handleEditAdmin(admin)}
+                                                                className="p-2 text-gray-600 dark:text-gray-400 hover:text-electric hover:bg-electric/10 rounded-lg transition-colors"
+                                                            >
+                                                                <Edit className="w-4 h-4" />
+                                                            </button>
+                                                            {admin.email !== 'admin@tfcmedia.com' && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setTimeout(async () => {
+                                                                            if (!window.confirm('Are you sure you want to delete this admin? This action cannot be undone.')) return;
+                                                                            try {
+                                                                                setLoadingAdmins(true);
+                                                                                const { data, error } = await supabase.functions.invoke('delete-user', {
+                                                                                    body: { userId: admin.id }
+                                                                                });
+                                                                                if (error) throw error;
+                                                                                if (!data.success) throw new Error(data.error || 'Failed to delete user');
+                                                                                await fetchAdmins();
+                                                                                alert('Admin deleted successfully');
+                                                                            } catch (err: any) {
+                                                                                console.error('Error deleting admin:', err);
+                                                                                alert(`Failed to delete admin: ${err.message || 'Unknown error'}`);
+                                                                            } finally {
+                                                                                setLoadingAdmins(false);
+                                                                            }
+                                                                        }, 0);
+                                                                    }}
+                                                                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
