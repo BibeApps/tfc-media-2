@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Loader2, Building2, Globe, Clock, Mail, MessageSquare, Bell, Upload, Image as ImageIcon, X, Calendar, CreditCard, Image, Users, Shield, User, Edit, Trash2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import { formatPhoneNumber } from '../../utils/phoneFormatter';
+import { createUser } from '../../utils/userManagement';
 
 interface SiteSettings {
     id: string;
@@ -95,6 +96,23 @@ const Settings: React.FC = () => {
     const [dragActive, setDragActive] = useState(false);
     const [adminUsers, setAdminUsers] = useState<any[]>([]);
     const [loadingAdmins, setLoadingAdmins] = useState(false);
+    const [selectedAdmin, setSelectedAdmin] = useState<any | null>(null);
+    const [isEditingAdmin, setIsEditingAdmin] = useState(false);
+    const [isAddingAdmin, setIsAddingAdmin] = useState(false);
+    const [adminFormData, setAdminFormData] = useState<any>({});
+    const [createdAdminPassword, setCreatedAdminPassword] = useState<string | null>(null);
+    const [addAdminData, setAddAdminData] = useState({
+        email: '',
+        name: '',
+        role: 'admin' as 'admin',
+        phone: '',
+        company: '',
+        address: '',
+        city: '',
+        state: '',
+        zip: '',
+        country: 'USA'
+    });
 
     useEffect(() => {
         fetchSettings();
@@ -228,6 +246,86 @@ const Settings: React.FC = () => {
             fetchAdmins();
         }
     }, [activeTab]);
+
+    const handleEditAdmin = (admin: any) => {
+        setSelectedAdmin(admin);
+        setAdminFormData(admin);
+        setIsEditingAdmin(true);
+    };
+
+    const handleSaveAdmin = async () => {
+        if (!selectedAdmin) return;
+
+        try {
+            setLoadingAdmins(true);
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    name: adminFormData.name,
+                    email: adminFormData.email,
+                    phone: adminFormData.phone,
+                    company: adminFormData.company,
+                    city: adminFormData.city,
+                    state: adminFormData.state,
+                    status: adminFormData.status,
+                })
+                .eq('id', selectedAdmin.id);
+
+            if (error) throw error;
+
+            await fetchAdmins();
+            setIsEditingAdmin(false);
+            setSelectedAdmin(null);
+            alert('Admin updated successfully');
+        } catch (err) {
+            console.error('Error updating admin:', err);
+            alert('Failed to update admin');
+        } finally {
+            setLoadingAdmins(false);
+        }
+    };
+
+    const handleAddAdmin = async () => {
+        if (!addAdminData.email || !addAdminData.name) {
+            alert('Please fill in all required fields (Name and Email)');
+            return;
+        }
+
+        try {
+            setLoadingAdmins(true);
+            const result = await createUser(addAdminData);
+
+            if (result.success) {
+                setCreatedAdminPassword(result.tempPassword || null);
+                await fetchAdmins();
+                // Don't close modal yet - show password to admin
+            } else {
+                alert(`Failed to create admin: ${result.error}`);
+            }
+        } catch (err) {
+            console.error('Error adding admin:', err);
+            alert('Failed to add admin');
+        } finally {
+            setLoadingAdmins(false);
+        }
+    };
+
+    const closeAddAdminModal = () => {
+        setIsAddingAdmin(false);
+        setCreatedAdminPassword(null);
+        setAddAdminData({
+            email: '',
+            name: '',
+            role: 'admin',
+            phone: '',
+            company: '',
+            address: '',
+            city: '',
+            state: '',
+            zip: '',
+            country: 'USA'
+        });
+    };
 
     const handleLogoUpload = async (file: File) => {
         if (!siteSettings) return;
@@ -1410,8 +1508,8 @@ const Settings: React.FC = () => {
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${admin.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' :
-                                                                admin.status === 'inactive' ? 'bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-400' :
-                                                                    'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400'
+                                                            admin.status === 'inactive' ? 'bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-400' :
+                                                                'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400'
                                                             }`}>
                                                             {admin.status}
                                                         </span>
@@ -1428,19 +1526,309 @@ const Settings: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-500/10 rounded-lg border border-blue-200 dark:border-blue-500/20">
-                                <div className="flex items-start gap-3">
-                                    <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <p className="font-bold text-blue-900 dark:text-blue-200 mb-1">Admin User Management</p>
-                                        <p className="text-sm text-blue-800 dark:text-blue-300">
-                                            To add new admin users, go to <strong>Admin → Clients</strong> page and use the "Add User" button.
-                                            Select "Admin" as the role when creating the user.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
+
+                        {/* Add Admin Modal */}
+                        <AnimatePresence>
+                            {isAddingAdmin && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        className="bg-white dark:bg-charcoal w-full max-w-3xl rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto"
+                                    >
+                                        <div className="p-6 border-b border-gray-200 dark:border-white/10 flex items-center justify-between sticky top-0 bg-white dark:bg-charcoal z-10">
+                                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Add New Admin</h3>
+                                            <button
+                                                onClick={closeAddAdminModal}
+                                                className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                                            >
+                                                <X className="w-5 h-5" />
+                                            </button>
+                                        </div>
+
+                                        {createdAdminPassword ? (
+                                            <div className="p-6 space-y-6">
+                                                <div className="text-center">
+                                                    <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                        <Shield className="w-8 h-8 text-green-500" />
+                                                    </div>
+                                                    <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Admin Created Successfully!</h4>
+                                                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                                                        The admin has been created and an activation email has been sent.
+                                                    </p>
+                                                </div>
+
+                                                <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg p-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                                        <div className="flex-1">
+                                                            <p className="font-bold text-amber-900 dark:text-amber-200 mb-2">Temporary Password</p>
+                                                            <p className="text-sm text-amber-800 dark:text-amber-300 mb-3">
+                                                                Save this password securely. The admin will need to reset it upon first login.
+                                                            </p>
+                                                            <div className="bg-white dark:bg-obsidian rounded-lg p-3 font-mono text-lg font-bold text-gray-900 dark:text-white border border-amber-300 dark:border-amber-500/30">
+                                                                {createdAdminPassword}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex justify-end gap-3 pt-4">
+                                                    <button
+                                                        onClick={closeAddAdminModal}
+                                                        className="px-6 py-2 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold transition-colors"
+                                                    >
+                                                        Done
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="p-6 space-y-6">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                                                Full Name <span className="text-red-500">*</span>
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                value={addAdminData.name}
+                                                                onChange={(e) => setAddAdminData({ ...addAdminData, name: e.target.value })}
+                                                                className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                                placeholder="John Doe"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                                                                Email <span className="text-red-500">*</span>
+                                                            </label>
+                                                            <input
+                                                                type="email"
+                                                                value={addAdminData.email}
+                                                                onChange={(e) => setAddAdminData({ ...addAdminData, email: e.target.value })}
+                                                                className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                                placeholder="john@example.com"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Phone</label>
+                                                            <input
+                                                                type="tel"
+                                                                value={addAdminData.phone}
+                                                                onChange={(e) => setAddAdminData({ ...addAdminData, phone: formatPhoneNumber(e.target.value) })}
+                                                                className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                                placeholder="(555) 123-4567"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Company</label>
+                                                            <input
+                                                                type="text"
+                                                                value={addAdminData.company}
+                                                                onChange={(e) => setAddAdminData({ ...addAdminData, company: e.target.value })}
+                                                                className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                                placeholder="Company Name"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        <div>
+                                                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Address</label>
+                                                            <input
+                                                                type="text"
+                                                                value={addAdminData.address}
+                                                                onChange={(e) => setAddAdminData({ ...addAdminData, address: e.target.value })}
+                                                                className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                                placeholder="123 Main St"
+                                                            />
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                            <div>
+                                                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">City</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={addAdminData.city}
+                                                                    onChange={(e) => setAddAdminData({ ...addAdminData, city: e.target.value })}
+                                                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                                    placeholder="New York"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">State</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={addAdminData.state}
+                                                                    onChange={(e) => setAddAdminData({ ...addAdminData, state: e.target.value })}
+                                                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                                    placeholder="NY"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ZIP</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={addAdminData.zip}
+                                                                    onChange={(e) => setAddAdminData({ ...addAdminData, zip: e.target.value })}
+                                                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                                    placeholder="10001"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-6 border-t border-gray-200 dark:border-white/10 flex justify-end gap-3 sticky bottom-0 bg-white dark:bg-charcoal">
+                                                    <button
+                                                        onClick={closeAddAdminModal}
+                                                        className="px-6 py-2 border border-gray-200 dark:border-white/10 rounded-lg font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={handleAddAdmin}
+                                                        disabled={!addAdminData.email || !addAdminData.name || loadingAdmins}
+                                                        className="px-6 py-2 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                    >
+                                                        {loadingAdmins ? (
+                                                            <>
+                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                                Creating...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Shield className="w-4 h-4" />
+                                                                Create Admin
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </motion.div>
+                                </div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Edit Admin Modal */}
+                        <AnimatePresence>
+                            {isEditingAdmin && selectedAdmin && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        className="bg-white dark:bg-charcoal w-full max-w-2xl rounded-xl shadow-2xl"
+                                    >
+                                        <div className="p-6 border-b border-gray-200 dark:border-white/10 flex items-center justify-between">
+                                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Edit Admin</h3>
+                                            <button
+                                                onClick={() => setIsEditingAdmin(false)}
+                                                className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                                            >
+                                                <X className="w-5 h-5" />
+                                            </button>
+                                        </div>
+
+                                        <div className="p-6 space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Name</label>
+                                                    <input
+                                                        type="text"
+                                                        value={adminFormData.name || ''}
+                                                        onChange={(e) => setAdminFormData({ ...adminFormData, name: e.target.value })}
+                                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Email</label>
+                                                    <input
+                                                        type="email"
+                                                        value={adminFormData.email || ''}
+                                                        onChange={(e) => setAdminFormData({ ...adminFormData, email: e.target.value })}
+                                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Phone</label>
+                                                    <input
+                                                        type="tel"
+                                                        value={adminFormData.phone || ''}
+                                                        onChange={(e) => setAdminFormData({ ...adminFormData, phone: formatPhoneNumber(e.target.value) })}
+                                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Company</label>
+                                                    <input
+                                                        type="text"
+                                                        value={adminFormData.company || ''}
+                                                        onChange={(e) => setAdminFormData({ ...adminFormData, company: e.target.value })}
+                                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">City</label>
+                                                    <input
+                                                        type="text"
+                                                        value={adminFormData.city || ''}
+                                                        onChange={(e) => setAdminFormData({ ...adminFormData, city: e.target.value })}
+                                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">State</label>
+                                                    <input
+                                                        type="text"
+                                                        value={adminFormData.state || ''}
+                                                        onChange={(e) => setAdminFormData({ ...adminFormData, state: e.target.value })}
+                                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                                                    <select
+                                                        value={adminFormData.status || 'active'}
+                                                        onChange={(e) => setAdminFormData({ ...adminFormData, status: e.target.value })}
+                                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
+                                                    >
+                                                        <option value="active">Active</option>
+                                                        <option value="inactive">Inactive</option>
+                                                        <option value="onboarding">Onboarding</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6 border-t border-gray-200 dark:border-white/10 flex justify-end gap-3">
+                                            <button
+                                                onClick={() => setIsEditingAdmin(false)}
+                                                className="px-6 py-2 border border-gray-200 dark:border-white/10 rounded-lg font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleSaveAdmin}
+                                                disabled={loadingAdmins}
+                                                className="px-6 py-2 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold transition-colors disabled:opacity-50 flex items-center gap-2"
+                                            >
+                                                {loadingAdmins ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        Saving...
+                                                    </>
+                                                ) : (
+                                                    'Save Changes'
+                                                )}
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 )}
             </motion.div>
