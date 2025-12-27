@@ -71,21 +71,8 @@ const Support: React.FC = () => {
 
             if (error) throw error;
 
-            // Send status update email to client
-            try {
-                await supabase.functions.invoke('send-support-status-email', {
-                    body: {
-                        ticketNumber: ticket.ticket_number,
-                        name: ticket.name,
-                        email: ticket.email,
-                        subject: ticket.subject,
-                        status: newStatus,
-                        adminResponse: ticket.admin_response || null
-                    }
-                });
-            } catch (emailError) {
-                console.error('Failed to send status update email:', emailError);
-            }
+            // Don't send email here - email will be sent when admin clicks "Send Update" button
+            // This prevents duplicate emails when just changing status
 
             await fetchTickets();
         } catch (err) {
