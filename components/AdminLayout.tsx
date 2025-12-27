@@ -47,7 +47,7 @@ const AdminLayout: React.FC = () => {
         };
     }, []);
 
-    const fetchUnreadCount = async () => {
+    const fetchUnreadSupportCount = async () => {
         try {
             const { data, error } = await supabase
                 .from('support_tickets')
@@ -57,7 +57,7 @@ const AdminLayout: React.FC = () => {
             if (error) throw error;
 
             const count = data?.length || 0;
-            setUnreadCount(count);
+            setUnreadSupportCount(count);
         } catch (err) {
             console.error('Error fetching unread count:', err);
         }
