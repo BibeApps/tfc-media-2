@@ -4,6 +4,7 @@ import { supabase } from '../../supabaseClient';
 import { formatDateTime } from '../../utils/dateUtils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { SupportModal } from '../../components/SupportModal';
 
 interface SupportTicket {
     id: string;
@@ -32,6 +33,7 @@ const SupportTickets: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
     const [reopening, setReopening] = useState(false);
+    const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
     useEffect(() => {
         fetchTickets();
@@ -130,18 +132,27 @@ const SupportTickets: React.FC = () => {
         <div className="space-y-6">
             {/* Header */}
             <div className="bg-white dark:bg-charcoal rounded-xl border border-gray-200 dark:border-white/10 p-6">
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="w-12 h-12 bg-electric/10 rounded-xl flex items-center justify-center">
-                        <MessageSquare className="w-6 h-6 text-electric" />
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-electric/10 rounded-xl flex items-center justify-center">
+                            <MessageSquare className="w-6 h-6 text-electric" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
+                                My Support Tickets
+                            </h1>
+                            <p className="text-gray-600 dark:text-gray-400">
+                                View and manage your support requests
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-3xl font-heading font-bold text-gray-900 dark:text-white">
-                            My Support Tickets
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-400">
-                            View and manage your support requests
-                        </p>
-                    </div>
+                    <button
+                        onClick={() => setIsSupportModalOpen(true)}
+                        className="px-6 py-3 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold shadow-lg shadow-electric/20 transition-all flex items-center gap-2"
+                    >
+                        <MessageSquare className="w-5 h-5" />
+                        Contact Support
+                    </button>
                 </div>
             </div>
 
@@ -348,6 +359,8 @@ const SupportTickets: React.FC = () => {
                     </div>
                 )}
             </AnimatePresence>
+
+            <SupportModal isOpen={isSupportModalOpen} onClose={() => setIsSupportModalOpen(false)} />
         </div>
     );
 };
