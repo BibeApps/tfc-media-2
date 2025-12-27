@@ -1,5 +1,6 @@
 // Edge Function to send support ticket email notifications
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -22,6 +23,32 @@ Deno.serve(async (req) => {
 
         const APP_URL = Deno.env.get('APP_URL') || 'http://localhost:3001'
 
+        // Create Supabase client to fetch settings
+        const supabaseAdmin = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false
+                }
+            }
+        )
+
+        // Fetch contact email from site settings
+        const { data: settings, error: settingsError } = await supabaseAdmin
+            .from('site_settings')
+            .select('contact_email')
+            .single()
+
+        if (settingsError) {
+            console.error('Error fetching settings:', settingsError)
+        }
+
+        // Use contact email from settings, fallback to default if not set
+        const adminEmail = settings?.contact_email || 'admin@tfcmedia.com'
+        console.log('Sending support ticket notification to:', adminEmail)
+
         // Send email to admin
         const adminEmailResponse = await fetch('https://api.resend.com/emails', {
             method: 'POST',
@@ -31,7 +58,7 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify({
                 from: 'TFC Media Support <noreply@tfcmediagroup.com>',
-                to: ['admin@tfcmedia.com'], // Admin email
+                to: [adminEmail],
                 subject: `New Support Ticket #${ticketNumber}`,
                 html: `
                     <!DOCTYPE html>
