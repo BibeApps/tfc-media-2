@@ -129,21 +129,29 @@ const Support: React.FC = () => {
     };
 
     const submitResponse = async () => {
-        if (!selectedTicket || !responseText.trim()) return;
+        if (!selectedTicket) return;
 
         setResponding(true);
         try {
-            // Append new response to existing one if it exists
-            const updatedResponse = selectedTicket.admin_response
-                ? `${selectedTicket.admin_response}\n\n--- Update ${new Date().toLocaleString()} ---\n${responseText}`
-                : responseText;
+            // Append new response to existing one if responseText is provided
+            const updatedResponse = responseText.trim()
+                ? (selectedTicket.admin_response
+                    ? `${selectedTicket.admin_response}\n\n--- Update ${new Date().toLocaleString()} ---\n${responseText}`
+                    : responseText)
+                : selectedTicket.admin_response; // Keep existing response if no new text
+
+            // Only update admin_response if there's text to add
+            const updateData: any = {
+                responded_at: new Date().toISOString()
+            };
+
+            if (responseText.trim()) {
+                updateData.admin_response = updatedResponse;
+            }
 
             const { error } = await supabase
                 .from('support_tickets')
-                .update({
-                    admin_response: updatedResponse,
-                    responded_at: new Date().toISOString()
-                })
+                .update(updateData)
                 .eq('id', selectedTicket.id);
 
             if (error) throw error;
@@ -156,8 +164,8 @@ const Support: React.FC = () => {
                         name: selectedTicket.name,
                         email: selectedTicket.email,
                         subject: selectedTicket.subject,
-                        status: selectedTicket.status, // Use current status, not hardcoded 'resolved'
-                        adminResponse: updatedResponse
+                        status: selectedTicket.status, // Use current status
+                        adminResponse: updatedResponse || null
                     }
                 });
             } catch (emailError) {
@@ -495,7 +503,7 @@ const Support: React.FC = () => {
                                     />
                                     <button
                                         onClick={submitResponse}
-                                        disabled={!responseText.trim() || responding}
+                                        disabled={responding}
                                         className="mt-3 px-6 py-2 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-electric/20 transition-all disabled:opacity-50"
                                     >
                                         {responding ? (
