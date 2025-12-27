@@ -6,6 +6,7 @@ import { useProjects } from '../../context/ProjectContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../supabaseClient';
 import { useFavorites } from '../../hooks/useFavorites';
+import { SupportModal } from '../../components/SupportModal';
 
 const StatCard: React.FC<{ title: string; value: string | number; icon: React.ReactNode; link?: string }> = ({ title, value, icon, link }) => {
     const Content = () => (
@@ -44,6 +45,7 @@ const Dashboard: React.FC = () => {
         newPhotos: 0
     });
     const [loading, setLoading] = useState(true);
+    const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
     // Fetch dashboard statistics
     useEffect(() => {
@@ -226,10 +228,17 @@ const Dashboard: React.FC = () => {
                     <div className="bg-gray-900 dark:bg-white/5 rounded-xl p-6 text-white mt-6">
                         <h4 className="font-bold mb-2">Need Help?</h4>
                         <p className="text-sm text-gray-400 mb-4">Our support team is available 24/7 to assist you.</p>
-                        <button className="w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-bold transition-colors">Contact Support</button>
+                        <button
+                            onClick={() => setIsSupportModalOpen(true)}
+                            className="w-full py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-bold transition-colors"
+                        >
+                            Contact Support
+                        </button>
                     </div>
                 </div>
             </div>
+
+            <SupportModal isOpen={isSupportModalOpen} onClose={() => setIsSupportModalOpen(false)} />
         </div>
     );
 };
