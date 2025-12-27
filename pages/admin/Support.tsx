@@ -53,12 +53,33 @@ const Support: React.FC = () => {
 
     const updateTicketStatus = async (ticketId: string, newStatus: string) => {
         try {
+            // Get ticket details before updating
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (!ticket) return;
+
             const { error } = await supabase
                 .from('support_tickets')
                 .update({ status: newStatus })
                 .eq('id', ticketId);
 
             if (error) throw error;
+
+            // Send status update email to client
+            try {
+                await supabase.functions.invoke('send-support-status-email', {
+                    body: {
+                        ticketNumber: ticket.ticket_number,
+                        name: ticket.name,
+                        email: ticket.email,
+                        subject: ticket.subject,
+                        status: newStatus,
+                        adminResponse: ticket.admin_response || null
+                    }
+                });
+            } catch (emailError) {
+                console.error('Failed to send status update email:', emailError);
+            }
+
             await fetchTickets();
         } catch (err) {
             console.error('Error updating ticket status:', err);
@@ -119,10 +140,26 @@ const Support: React.FC = () => {
             if (error) throw error;
 
             // TODO: Send email to user with response
+            // Call Edge Function to send status update email to client
+            try {
+                await supabase.functions.invoke('send-support-status-email', {
+                    body: {
+                        ticketNumber: selectedTicket.ticket_number,
+                        name: selectedTicket.name,
+                        email: selectedTicket.email,
+                        subject: selectedTicket.subject,
+                        status: 'resolved',
+                        adminResponse: responseText
+                    }
+                });
+            } catch (emailError) {
+                console.error('Failed to send status update email:', emailError);
+                // Don't fail the update if email fails
+            }
 
             setResponseText('');
             setSelectedTicket(null);
-            await fetchTickets();
+            await fetchTickets(); // Refresh the list to show updated status
         } catch (err) {
             console.error('Error submitting response:', err);
             alert('Failed to submit response');

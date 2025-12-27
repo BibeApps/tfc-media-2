@@ -51,7 +51,7 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
 
             // Send email notifications
             try {
-                await supabase.functions.invoke('send-support-email', {
+                const emailResult = await supabase.functions.invoke('send-support-email', {
                     body: {
                         ticketNumber,
                         name: formData.name,
@@ -61,6 +61,12 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
                         priority: formData.priority
                     }
                 });
+
+                console.log('Email send result:', emailResult);
+
+                if (emailResult.error) {
+                    console.error('Email sending error:', emailResult.error);
+                }
             } catch (emailError) {
                 console.error('Email sending failed:', emailError);
                 // Don't fail the ticket creation if email fails
