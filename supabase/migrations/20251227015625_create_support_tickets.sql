@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Enable real-time for UPDATE events
+ALTER TABLE support_tickets REPLICA IDENTITY FULL;
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status);
 CREATE INDEX IF NOT EXISTS idx_support_tickets_user_id ON support_tickets(user_id);
