@@ -31,6 +31,7 @@ const AdminLayout: React.FC = () => {
     const [unreadSupportCount, setUnreadSupportCount] = useState(0);
 
     useEffect(() => {
+        console.log('AdminLayout: Setting up support tickets subscription...');
         fetchUnreadSupportCount();
 
         // Set up real-time subscription for support tickets
@@ -43,13 +44,19 @@ const AdminLayout: React.FC = () => {
                     table: 'support_tickets'
                 },
                 (payload) => {
-                    console.log('Support ticket change detected:', payload);
+                    console.log('✅ Support ticket change detected:', payload);
+                    console.log('Event type:', payload.eventType);
+                    console.log('Old data:', payload.old);
+                    console.log('New data:', payload.new);
                     fetchUnreadSupportCount();
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log('Subscription status:', status);
+            });
 
         return () => {
+            console.log('AdminLayout: Cleaning up subscription...');
             supabase.removeChannel(channel);
         };
     }, []);
