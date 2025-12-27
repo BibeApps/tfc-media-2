@@ -89,6 +89,24 @@ const SupportTickets: React.FC = () => {
 
             if (error) throw error;
 
+            // Send email notification to support team
+            try {
+                await supabase.functions.invoke('send-support-email', {
+                    body: {
+                        ticketNumber: selectedTicket.ticket_number,
+                        name: selectedTicket.name,
+                        email: selectedTicket.email,
+                        subject: selectedTicket.subject,
+                        message: selectedTicket.message,
+                        priority: selectedTicket.priority,
+                        isReopened: true
+                    }
+                });
+            } catch (emailError) {
+                console.error('Failed to send reopen notification email:', emailError);
+                // Don't fail the reopen if email fails
+            }
+
             await fetchTickets();
             setSelectedTicket(null);
         } catch (err) {
