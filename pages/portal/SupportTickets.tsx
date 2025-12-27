@@ -34,6 +34,7 @@ const SupportTickets: React.FC = () => {
     const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
     const [reopening, setReopening] = useState(false);
     const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+    const [reopenMessage, setReopenMessage] = useState('');
 
     useEffect(() => {
         fetchTickets();
@@ -75,15 +76,19 @@ const SupportTickets: React.FC = () => {
     };
 
     const reopenTicket = async () => {
-        if (!selectedTicket) return;
+        if (!selectedTicket || !reopenMessage.trim()) return;
 
         setReopening(true);
         try {
+            // Append reopen message to original message
+            const updatedMessage = `${selectedTicket.message}\n\n--- TICKET REOPENED ${new Date().toLocaleString()} ---\n${reopenMessage}`;
+
             const { error } = await supabase
                 .from('support_tickets')
                 .update({
                     is_reopened: true,
-                    status: 'in-progress'
+                    status: 'in-progress',
+                    message: updatedMessage
                 })
                 .eq('id', selectedTicket.id);
 
@@ -97,7 +102,7 @@ const SupportTickets: React.FC = () => {
                         name: selectedTicket.name,
                         email: selectedTicket.email,
                         subject: selectedTicket.subject,
-                        message: selectedTicket.message,
+                        message: updatedMessage,
                         priority: selectedTicket.priority,
                         isReopened: true
                     }
@@ -107,6 +112,7 @@ const SupportTickets: React.FC = () => {
                 // Don't fail the reopen if email fails
             }
 
+            setReopenMessage('');
             await fetchTickets();
             setSelectedTicket(null);
         } catch (err) {
@@ -356,13 +362,23 @@ const SupportTickets: React.FC = () => {
                                 {/* Reopen Button */}
                                 {selectedTicket.status === 'resolved' && !selectedTicket.is_reopened && (
                                     <div className="pt-4 border-t border-gray-200 dark:border-white/10">
+                                        <h4 className="font-bold text-gray-900 dark:text-white mb-2">
+                                            Reopen This Ticket
+                                        </h4>
                                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                                            Need further assistance? You can reopen this ticket.
+                                            Need further assistance? Please explain why you're reopening this ticket:
                                         </p>
+                                        <textarea
+                                            value={reopenMessage}
+                                            onChange={(e) => setReopenMessage(e.target.value)}
+                                            rows={3}
+                                            className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none mb-3"
+                                            placeholder="Describe the issue or why you need to reopen this ticket..."
+                                        />
                                         <button
                                             onClick={reopenTicket}
-                                            disabled={reopening}
-                                            className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold flex items-center gap-2 shadow-lg transition-all disabled:opacity-50"
+                                            disabled={!reopenMessage.trim() || reopening}
+                                            className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold flex items-center gap-2 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {reopening ? (
                                                 <><Loader2 className="w-4 h-4 animate-spin" /> Reopening...</>
