@@ -102,11 +102,12 @@ Deno.serve(async (req) => {
 
         // Send email to user with temporary password
         try {
+            console.log('Attempting to send password reset email to:', profile.email)
             const emailResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-password-email`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+                    'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
                 },
                 body: JSON.stringify({
                     email: profile.email,
@@ -116,11 +117,16 @@ Deno.serve(async (req) => {
                 })
             })
 
+            const emailResult = await emailResponse.json()
+
             if (!emailResponse.ok) {
-                console.warn('Failed to send password email, but password was updated')
+                console.error('Failed to send password email:', emailResult)
+                console.warn('Password was updated but email failed to send')
+            } else {
+                console.log('Password reset email sent successfully:', emailResult)
             }
         } catch (emailError) {
-            console.warn('Email sending error:', emailError)
+            console.error('Email sending error:', emailError)
             // Don't fail the request if email fails
         }
 
