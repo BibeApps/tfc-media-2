@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../supabaseClient';
 import { motion } from 'framer-motion';
 import {
     Calendar,
@@ -18,7 +19,8 @@ import {
     Settings,
     FileText,
     ImageIcon,
-    MessageSquare
+    MessageSquare,
+    LogOut
 } from 'lucide-react';
 
 const AdminHome: React.FC = () => {
@@ -117,12 +119,30 @@ const AdminHome: React.FC = () => {
             <div className="max-w-7xl mx-auto">
                 <div className="mb-12">
                     <div className="bg-gradient-to-r from-electric to-blue-600 rounded-2xl p-8 text-white shadow-xl shadow-electric/20 mb-8">
-                        <h1 className="text-3xl font-bold mb-2">
-                            Welcome Back, {user?.name || 'Admin'}!
-                        </h1>
-                        <p className="text-blue-100 text-lg">
-                            Here's what's happening with your business today
-                        </p>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h1 className="text-3xl font-bold mb-2">
+                                    Welcome Back, {user?.name || 'Admin'}!
+                                </h1>
+                                <p className="text-blue-100 text-lg">
+                                    Here's what's happening with your business today
+                                </p>
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    if (confirm('Are you sure you want to logout?')) {
+                                        const { error } = await supabase.auth.signOut();
+                                        if (!error) {
+                                            navigate('/login');
+                                        }
+                                    }
+                                }}
+                                className="px-6 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-lg font-bold transition-all flex items-center gap-2 border border-white/20"
+                            >
+                                <LogOut className="w-5 h-5" />
+                                Logout
+                            </button>
+                        </div>
                     </div>
                 </div>
 
