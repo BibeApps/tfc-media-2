@@ -157,6 +157,7 @@ function App() {
                             <Route path="purchases" element={<Purchases />} />
                             <Route path="downloads" element={<Downloads />} />
                             <Route path="favorites" element={<Favorites />} />
+                            <Route path="support-tickets" element={<SupportTickets />} />
                             <Route path="settings" element={<Settings />} />
                           </Route>
                         </Route>
