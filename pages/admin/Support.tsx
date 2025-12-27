@@ -150,7 +150,7 @@ const Support: React.FC = () => {
                 .from('support_tickets')
                 .update({
                     admin_response: responseText,
-                    status: 'resolved',
+                    status: 'resolved', // Set to resolved when admin responds
                     responded_at: new Date().toISOString()
                 })
                 .eq('id', selectedTicket.id);
