@@ -73,7 +73,11 @@ const AdminLayout: React.FC = () => {
         { path: '/admin/projects', icon: Briefcase, label: 'Projects' },
         { path: '/admin/portfolio', icon: Image, label: 'Portfolio' },
         { path: '/admin/team', icon: UserCircle, label: 'Team' },
-        { path: '/admin/support', icon: MessageSquare, label: 'Support', badge: unreadSupportCount },
+        {
+            path: '/admin/support',
+            icon: MessageSquare,
+            label: unreadSupportCount > 0 ? `${unreadSupportCount} Support Tickets` : 'Support Tickets'
+        },
         { path: '/admin/settings', icon: Settings, label: 'Settings' },
     ];
 
@@ -123,7 +127,7 @@ const AdminLayout: React.FC = () => {
                             to={item.path}
                             end={item.exact}
                             className={({ isActive }) =>
-                                `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all relative ${isActive
+                                `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${isActive
                                     ? 'bg-electric text-white shadow-lg shadow-electric/20'
                                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
                                 }`
@@ -131,11 +135,6 @@ const AdminLayout: React.FC = () => {
                         >
                             <item.icon className="w-5 h-5" />
                             {item.label}
-                            {item.badge && item.badge > 0 && (
-                                <span className="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
-                                    {item.badge}
-                                </span>
-                            )}
                         </NavLink>
                     ))}
                 </nav>
