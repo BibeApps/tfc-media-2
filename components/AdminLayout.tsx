@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -17,15 +17,49 @@ import {
     Bell,
     UserCircle,
     Image,
-    Edit2
+    Edit2,
+    MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { supabase } from '../supabaseClient';
 
 const AdminLayout: React.FC = () => {
     const { user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
+    const [unreadSupportCount, setUnreadSupportCount] = useState(0);
+
+    useEffect(() => {
+        fetchUnreadSupportCount();
+
+        // Set up real-time subscription for support tickets
+        const channel = supabase
+            .channel('support_tickets_changes')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'support_tickets' },
+                () => fetchUnreadSupportCount()
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
+    const fetchUnreadSupportCount = async () => {
+        try {
+            const { count, error } = await supabase
+                .from('support_tickets')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'new');
+
+            if (error) throw error;
+            setUnreadSupportCount(count || 0);
+        } catch (err) {
+            console.error('Error fetching unread support count:', err);
+        }
+    };
 
     const navItems = [
         { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
@@ -39,6 +73,7 @@ const AdminLayout: React.FC = () => {
         { path: '/admin/projects', icon: Briefcase, label: 'Projects' },
         { path: '/admin/portfolio', icon: Image, label: 'Portfolio' },
         { path: '/admin/team', icon: UserCircle, label: 'Team' },
+        { path: '/admin/support', icon: MessageSquare, label: 'Support', badge: unreadSupportCount },
         { path: '/admin/settings', icon: Settings, label: 'Settings' },
     ];
 
@@ -88,7 +123,7 @@ const AdminLayout: React.FC = () => {
                             to={item.path}
                             end={item.exact}
                             className={({ isActive }) =>
-                                `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${isActive
+                                `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all relative ${isActive
                                     ? 'bg-electric text-white shadow-lg shadow-electric/20'
                                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5'
                                 }`
@@ -96,6 +131,11 @@ const AdminLayout: React.FC = () => {
                         >
                             <item.icon className="w-5 h-5" />
                             {item.label}
+                            {item.badge && item.badge > 0 && (
+                                <span className="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                                    {item.badge}
+                                </span>
+                            )}
                         </NavLink>
                     ))}
                 </nav>

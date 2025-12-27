@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import { loadStripe } from '@stripe/stripe-js';
 import { supabase } from '../supabaseClient';
+import { SupportModal } from './SupportModal';
 
 // --- STRIPE CONFIGURATION ---
 const STRIPE_PUBLISHABLE_KEY = "pk_test_51SbMOd2Q5sKQr6xREozZINHdxVg2xYDQMzfV38IqsJRP8KUEkcJyTgAyX0dQvtW4fdy3nP8vKC5eRK1HhVidNI5q00MzKPaQH1";
@@ -657,73 +658,86 @@ const CartDrawer: React.FC = () => {
 
 const Footer: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   return (
-    <footer className="bg-charcoal text-white pt-16 pb-8 border-t border-white/5">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-          <div className="col-span-1 md:col-span-2">
-            <Link to="/" className="flex items-center gap-3 mb-6 group">
-              <img
-                src="/assets/images/tfc-logo.png"
-                alt="TFC Media"
-                className="h-56 w-auto object-contain group-hover:scale-105 transition-transform duration-200"
-              />
-            </Link>
-            <p className="text-gray-400 max-w-sm leading-relaxed mb-6">
-              Professional photography, videography, and digital media services tailored to your unique vision. Capturing moments, creating legacies.
-            </p>
-            <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-electric hover:text-white transition-all">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-electric hover:text-white transition-all">
-                <Facebook className="w-5 h-5" />
-              </a>
+    <>
+      <footer className="bg-charcoal text-white pt-16 pb-8 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            <div className="col-span-1 md:col-span-2">
+              <Link to="/" className="flex items-center gap-3 mb-6 group">
+                <img
+                  src="/assets/images/tfc-logo.png"
+                  alt="TFC Media"
+                  className="h-56 w-auto object-contain group-hover:scale-105 transition-transform duration-200"
+                />
+              </Link>
+              <p className="text-gray-400 max-w-sm leading-relaxed mb-6">
+                Professional photography, videography, and digital media services tailored to your unique vision. Capturing moments, creating legacies.
+              </p>
+              <div className="flex gap-4">
+                <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-electric hover:text-white transition-all">
+                  <Instagram className="w-5 h-5" />
+                </a>
+                <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-electric hover:text-white transition-all">
+                  <Facebook className="w-5 h-5" />
+                </a>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-lg mb-6">Quick Links</h4>
+              <ul className="space-y-3">
+                <li><Link to="/portfolio" className="text-gray-400 hover:text-electric transition-colors">Portfolio</Link></li>
+                {isAuthenticated && (
+                  <li><Link to="/gallery" className="text-gray-400 hover:text-electric transition-colors">Client Galleries</Link></li>
+                )}
+                <li><Link to="/about" className="text-gray-400 hover:text-electric transition-colors">About Us</Link></li>
+                <li><Link to="/services" className="text-gray-400 hover:text-electric transition-colors">Services</Link></li>
+                <li><Link to="/book" className="text-gray-400 hover:text-electric transition-colors">Book Now</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-lg mb-6">Support</h4>
+              <ul className="space-y-3">
+                <li><Link to="/faq" className="text-gray-400 hover:text-electric transition-colors">FAQ</Link></li>
+                <li><Link to="/licensing" className="text-gray-400 hover:text-electric transition-colors">Licensing</Link></li>
+                <li><Link to="/privacy" className="text-gray-400 hover:text-electric transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="text-gray-400 hover:text-electric transition-colors">Terms of Service</Link></li>
+                <li>
+                  <button
+                    onClick={() => setIsSupportModalOpen(true)}
+                    className="text-gray-400 hover:text-electric transition-colors"
+                  >
+                    Contact Support
+                  </button>
+                </li>
+              </ul>
             </div>
           </div>
 
-          <div>
-            <h4 className="font-bold text-lg mb-6">Quick Links</h4>
-            <ul className="space-y-3">
-              <li><Link to="/portfolio" className="text-gray-400 hover:text-electric transition-colors">Portfolio</Link></li>
-              {isAuthenticated && (
-                <li><Link to="/gallery" className="text-gray-400 hover:text-electric transition-colors">Client Galleries</Link></li>
+          <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
+            <p>© {new Date().getFullYear()} TFC Media Group. All rights reserved.</p>
+            <div className="flex gap-6">
+              {/* Consolidated Footer Login Link */}
+              {isAuthenticated ? (
+                <Link to={user?.role === 'admin' ? '/admin' : '/portal'} className="hover:text-white transition-colors">
+                  Dashboard
+                </Link>
+              ) : (
+                <Link to="/login" className="hover:text-white transition-colors">
+                  Login
+                </Link>
               )}
-              <li><Link to="/about" className="text-gray-400 hover:text-electric transition-colors">About Us</Link></li>
-              <li><Link to="/services" className="text-gray-400 hover:text-electric transition-colors">Services</Link></li>
-              <li><Link to="/book" className="text-gray-400 hover:text-electric transition-colors">Book Now</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold text-lg mb-6">Support</h4>
-            <ul className="space-y-3">
-              <li><Link to="/faq" className="text-gray-400 hover:text-electric transition-colors">FAQ</Link></li>
-              <li><Link to="/licensing" className="text-gray-400 hover:text-electric transition-colors">Licensing</Link></li>
-              <li><Link to="/privacy" className="text-gray-400 hover:text-electric transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="text-gray-400 hover:text-electric transition-colors">Terms of Service</Link></li>
-            </ul>
+            </div>
           </div>
         </div>
+      </footer>
 
-        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} TFC Media Group. All rights reserved.</p>
-          <div className="flex gap-6">
-            {/* Consolidated Footer Login Link */}
-            {isAuthenticated ? (
-              <Link to={user?.role === 'admin' ? '/admin' : '/portal'} className="hover:text-white transition-colors">
-                Dashboard
-              </Link>
-            ) : (
-              <Link to="/login" className="hover:text-white transition-colors">
-                Login
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
-    </footer>
+      <SupportModal isOpen={isSupportModalOpen} onClose={() => setIsSupportModalOpen(false)} />
+    </>
   );
 };
 

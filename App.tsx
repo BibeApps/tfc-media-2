@@ -40,6 +40,7 @@ import PortfolioAdmin from './pages/admin/PortfolioAdmin';
 import ProjectsAdmin from './pages/admin/ProjectsAdmin';
 import NotificationSettings from './pages/admin/NotificationSettings';
 import AdminSettings from './pages/admin/Settings';
+import Support from './pages/admin/Support';
 import AdminLayout from './components/AdminLayout';
 import { CartProvider } from './context/CartContext';
 import { GalleryProvider } from './context/GalleryContext';
@@ -136,6 +137,7 @@ function App() {
                             <Route path="portfolio" element={<PortfolioAdmin />} />
                             <Route path="notifications" element={<NotificationSettings />} />
                             <Route path="settings" element={<AdminSettings />} />
+                            <Route path="support" element={<Support />} />
                           </Route>
 
                           {/* Client Portal Routes - Protected */}
