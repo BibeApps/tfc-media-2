@@ -146,19 +146,22 @@ const Support: React.FC = () => {
 
         setResponding(true);
         try {
+            // Append new response to existing one if it exists
+            const updatedResponse = selectedTicket.admin_response
+                ? `${selectedTicket.admin_response}\n\n--- Update ${new Date().toLocaleString()} ---\n${responseText}`
+                : responseText;
+
             const { error } = await supabase
                 .from('support_tickets')
                 .update({
-                    admin_response: responseText,
-                    status: 'resolved', // Set to resolved when admin responds
+                    admin_response: updatedResponse,
                     responded_at: new Date().toISOString()
                 })
                 .eq('id', selectedTicket.id);
 
             if (error) throw error;
 
-            // TODO: Send email to user with response
-            // Call Edge Function to send status update email to client
+            // Send status update email to client with current status
             try {
                 await supabase.functions.invoke('send-support-status-email', {
                     body: {
@@ -166,8 +169,8 @@ const Support: React.FC = () => {
                         name: selectedTicket.name,
                         email: selectedTicket.email,
                         subject: selectedTicket.subject,
-                        status: 'resolved',
-                        adminResponse: responseText
+                        status: selectedTicket.status, // Use current status, not hardcoded 'resolved'
+                        adminResponse: updatedResponse
                     }
                 });
             } catch (emailError) {
@@ -475,41 +478,46 @@ const Support: React.FC = () => {
                                 </div>
 
                                 {/* Admin Response */}
-                                {selectedTicket.admin_response ? (
-                                    <div>
-                                        <h4 className="font-bold text-gray-900 dark:text-white mb-2">Admin Response</h4>
-                                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/50 p-4 rounded-lg whitespace-pre-wrap text-gray-900 dark:text-white">
-                                            {selectedTicket.admin_response}
-                                        </div>
-                                        {selectedTicket.responded_at && (
-                                            <p className="text-sm text-gray-500 mt-2">
-                                                Responded on {formatDateTime(selectedTicket.responded_at)}
-                                            </p>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <h4 className="font-bold text-gray-900 dark:text-white mb-2">Add Response</h4>
-                                        <textarea
-                                            value={responseText}
-                                            onChange={(e) => setResponseText(e.target.value)}
-                                            rows={4}
-                                            className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric resize-none"
-                                            placeholder="Type your response to the customer..."
-                                        />
-                                        <button
-                                            onClick={submitResponse}
-                                            disabled={!responseText.trim() || responding}
-                                            className="mt-3 px-6 py-2 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-electric/20 transition-all disabled:opacity-50"
-                                        >
-                                            {responding ? (
-                                                <>Sending <Loader2 className="w-4 h-4 animate-spin" /></>
-                                            ) : (
-                                                <>Send Response <Send className="w-4 h-4" /></>
+                                <div>
+                                    <h4 className="font-bold text-gray-900 dark:text-white mb-2">
+                                        {selectedTicket.admin_response ? 'Update Response' : 'Add Response'}
+                                    </h4>
+
+                                    {selectedTicket.admin_response && (
+                                        <div className="mb-4">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Previous Response:
+                                            </label>
+                                            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/50 p-4 rounded-lg whitespace-pre-wrap text-gray-900 dark:text-white">
+                                                {selectedTicket.admin_response}
+                                            </div>
+                                            {selectedTicket.responded_at && (
+                                                <p className="text-sm text-gray-500 mt-2">
+                                                    Last responded on {formatDateTime(selectedTicket.responded_at)}
+                                                </p>
                                             )}
-                                        </button>
-                                    </div>
-                                )}
+                                        </div>
+                                    )}
+
+                                    <textarea
+                                        value={responseText}
+                                        onChange={(e) => setResponseText(e.target.value)}
+                                        rows={4}
+                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric resize-none"
+                                        placeholder={selectedTicket.admin_response ? "Add additional information..." : "Type your response to the customer..."}
+                                    />
+                                    <button
+                                        onClick={submitResponse}
+                                        disabled={!responseText.trim() || responding}
+                                        className="mt-3 px-6 py-2 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-electric/20 transition-all disabled:opacity-50"
+                                    >
+                                        {responding ? (
+                                            <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
+                                        ) : (
+                                            <><Send className="w-4 h-4" /> {selectedTicket.admin_response ? 'Send Update' : 'Send Response'}</>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     </div>
