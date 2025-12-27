@@ -47,17 +47,19 @@ const AdminLayout: React.FC = () => {
         };
     }, []);
 
-    const fetchUnreadSupportCount = async () => {
+    const fetchUnreadCount = async () => {
         try {
-            const { count, error } = await supabase
+            const { data, error } = await supabase
                 .from('support_tickets')
-                .select('*', { count: 'exact', head: true })
-                .eq('status', 'new');
+                .select('id', { count: 'exact' })
+                .eq('is_read', false); // Count unread tickets
 
             if (error) throw error;
-            setUnreadSupportCount(count || 0);
+
+            const count = data?.length || 0;
+            setUnreadCount(count);
         } catch (err) {
-            console.error('Error fetching unread support count:', err);
+            console.error('Error fetching unread count:', err);
         }
     };
 
