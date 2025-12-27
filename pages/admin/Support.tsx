@@ -321,23 +321,41 @@ const Support: React.FC = () => {
                                     <tr
                                         key={ticket.id}
                                         onClick={() => markAsRead(ticket)}
-                                        className="hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
+                                        className={`cursor-pointer transition-colors ${!ticket.is_read
+                                                ? 'bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20'
+                                                : 'hover:bg-gray-50 dark:hover:bg-white/5'
+                                            }`}
                                     >
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="font-mono text-sm font-bold text-electric">
-                                                {ticket.ticket_number}
-                                            </span>
-                                        </td>
                                         <td className="px-6 py-4">
-                                            <div>
-                                                <div className="font-bold text-gray-900 dark:text-white">{ticket.name}</div>
-                                                <div className="text-sm text-gray-500">{ticket.email}</div>
+                                            <div className="flex items-center gap-3">
+                                                {!ticket.is_read && (
+                                                    <span className="flex h-2 w-2">
+                                                        <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-electric opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-electric"></span>
+                                                    </span>
+                                                )}
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-sm font-mono ${!ticket.is_read ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+                                                            #{ticket.ticket_number}
+                                                        </span>
+                                                        {!ticket.is_read && (
+                                                            <span className="px-2 py-0.5 text-xs font-bold bg-electric text-white rounded-full">
+                                                                UNREAD
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className={`text-sm ${!ticket.is_read ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+                                                        {ticket.subject}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="max-w-xs truncate text-gray-900 dark:text-white">
-                                                {ticket.subject}
+                                            <div className={`text-sm ${!ticket.is_read ? 'font-semibold' : ''}`}>
+                                                {ticket.name}
                                             </div>
+                                            <div className="text-xs text-gray-500">{ticket.email}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`font-bold capitalize ${getPriorityColor(ticket.priority)}`}>
