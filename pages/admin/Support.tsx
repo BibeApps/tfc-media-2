@@ -14,6 +14,7 @@ interface SupportTicket {
     message: string;
     priority: 'low' | 'medium' | 'high' | 'urgent';
     status: 'new' | 'in-progress' | 'resolved';
+    is_read: boolean; // Tracks if admin has viewed the ticket
     admin_response: string | null;
     responded_by: string | null;
     responded_at: string | null;
@@ -43,7 +44,12 @@ const Support: React.FC = () => {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
+
             setTickets(data || []);
+
+            // Count unread tickets (is_read = false)
+            const unreadCount = (data || []).filter(t => !t.is_read).length;
+            setUnreadCount(unreadCount);
         } catch (err) {
             console.error('Error fetching tickets:', err);
         } finally {
@@ -106,20 +112,26 @@ const Support: React.FC = () => {
     };
 
     const markAsRead = async (ticket: SupportTicket) => {
-        // Only mark as read if status is 'new'
-        if (ticket.status === 'new') {
+        // Only mark as read if it's currently unread
+        if (!ticket.is_read) {
             try {
                 const { error } = await supabase
                     .from('support_tickets')
-                    .update({ status: 'in-progress' })
+                    .update({ is_read: true })
                     .eq('id', ticket.id);
 
                 if (error) throw error;
-                await fetchTickets(); // Refresh to update the list and counter
+
+                // Update local state
+                setTickets(prev => prev.map(t =>
+                    t.id === ticket.id ? { ...t, is_read: true } : t
+                ));
             } catch (err) {
                 console.error('Error marking ticket as read:', err);
             }
         }
+
+        // Open the ticket modal
         setSelectedTicket(ticket);
     };
 
