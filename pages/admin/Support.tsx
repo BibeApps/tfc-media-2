@@ -124,9 +124,14 @@ const Support: React.FC = () => {
                 if (error) throw error;
 
                 // Update local state
-                setTickets(prev => prev.map(t =>
+                const updatedTickets = tickets.map(t =>
                     t.id === ticket.id ? { ...t, is_read: true } : t
-                ));
+                );
+                setTickets(updatedTickets);
+
+                // Recalculate unread count
+                const newUnreadCount = updatedTickets.filter(t => !t.is_read).length;
+                setUnreadCount(newUnreadCount);
             } catch (err) {
                 console.error('Error marking ticket as read:', err);
             }
@@ -322,8 +327,8 @@ const Support: React.FC = () => {
                                         key={ticket.id}
                                         onClick={() => markAsRead(ticket)}
                                         className={`cursor-pointer transition-colors ${!ticket.is_read
-                                                ? 'bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20'
-                                                : 'hover:bg-gray-50 dark:hover:bg-white/5'
+                                            ? 'bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20'
+                                            : 'hover:bg-gray-50 dark:hover:bg-white/5'
                                             }`}
                                     >
                                         <td className="px-6 py-4">
