@@ -68,6 +68,28 @@ const Bookings: React.FC = () => {
 
     useEffect(() => {
         fetchBookings();
+
+        // Set up real-time subscriptions for auto-refresh
+        const bookingsChannel = supabase
+            .channel('bookings_changes')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'bookings' },
+                () => fetchBookings()
+            )
+            .subscribe();
+
+        const blackoutChannel = supabase
+            .channel('blackout_dates_changes')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'blackout_dates' },
+                () => fetchBookings()
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(bookingsChannel);
+            supabase.removeChannel(blackoutChannel);
+        };
     }, []);
 
     const fetchBookings = async () => {

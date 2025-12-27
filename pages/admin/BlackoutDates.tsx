@@ -12,6 +12,19 @@ const BlackoutDates: React.FC = () => {
 
     useEffect(() => {
         fetchBlackoutDates();
+
+        // Set up real-time subscription for auto-refresh
+        const channel = supabase
+            .channel('blackout_dates_admin_changes')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'blackout_dates' },
+                () => fetchBlackoutDates()
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const fetchBlackoutDates = async () => {

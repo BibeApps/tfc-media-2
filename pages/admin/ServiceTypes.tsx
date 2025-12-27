@@ -29,6 +29,19 @@ const ServiceTypes: React.FC = () => {
 
     useEffect(() => {
         fetchServices();
+
+        // Set up real-time subscription for auto-refresh
+        const channel = supabase
+            .channel('service_types_changes')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'service_types' },
+                () => fetchServices()
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const fetchServices = async () => {
@@ -157,8 +170,8 @@ const ServiceTypes: React.FC = () => {
                         key={service.id}
                         layout
                         className={`bg-white dark:bg-charcoal rounded-xl border ${service.is_active
-                                ? 'border-gray-200 dark:border-white/10'
-                                : 'border-gray-300 dark:border-white/20 opacity-60'
+                            ? 'border-gray-200 dark:border-white/10'
+                            : 'border-gray-300 dark:border-white/20 opacity-60'
                             } p-6 hover:shadow-lg transition-all`}
                     >
                         <div className="flex items-start justify-between mb-4">
@@ -175,8 +188,8 @@ const ServiceTypes: React.FC = () => {
                             <button
                                 onClick={() => toggleActive(service)}
                                 className={`p-2 rounded-lg transition-colors ${service.is_active
-                                        ? 'text-green-500 hover:bg-green-500/10'
-                                        : 'text-gray-400 hover:bg-gray-400/10'
+                                    ? 'text-green-500 hover:bg-green-500/10'
+                                    : 'text-gray-400 hover:bg-gray-400/10'
                                     }`}
                             >
                                 {service.is_active ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}

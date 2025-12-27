@@ -49,6 +49,19 @@ const Clients: React.FC = () => {
 
     useEffect(() => {
         fetchClients();
+
+        // Set up real-time subscription for auto-refresh
+        const channel = supabase
+            .channel('profiles_changes')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'profiles' },
+                () => fetchClients()
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const fetchClients = async () => {

@@ -26,6 +26,19 @@ const ProjectsAdmin: React.FC = () => {
     useEffect(() => {
         fetchProjects();
         fetchServiceTypes();
+
+        // Set up real-time subscription for auto-refresh
+        const channel = supabase
+            .channel('portal_projects_changes')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'portal_projects' },
+                () => fetchProjects()
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const fetchServiceTypes = async () => {

@@ -15,6 +15,28 @@ const Orders: React.FC = () => {
 
     useEffect(() => {
         fetchOrders();
+
+        // Set up real-time subscriptions for auto-refresh
+        const ordersChannel = supabase
+            .channel('orders_changes')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'orders' },
+                () => fetchOrders()
+            )
+            .subscribe();
+
+        const orderItemsChannel = supabase
+            .channel('order_items_changes')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'order_items' },
+                () => fetchOrders()
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(ordersChannel);
+            supabase.removeChannel(orderItemsChannel);
+        };
     }, []);
 
     const fetchOrders = async () => {
