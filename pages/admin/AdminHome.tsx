@@ -17,7 +17,8 @@ import {
     Mail,
     Settings,
     FileText,
-    ImageIcon
+    ImageIcon,
+    MessageSquare
 } from 'lucide-react';
 
 const AdminHome: React.FC = () => {
@@ -94,6 +95,13 @@ const AdminHome: React.FC = () => {
             icon: Shield,
             path: '/admin/team',
             color: 'from-teal-500 to-emerald-500',
+        },
+        {
+            title: 'Support Tickets',
+            description: 'Manage client support requests',
+            icon: MessageSquare,
+            path: '/admin/support',
+            color: 'from-blue-500 to-indigo-500',
         },
         {
             title: 'Settings',
