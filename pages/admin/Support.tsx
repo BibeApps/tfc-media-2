@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Filter, Search, Trash2, CheckCircle, Clock, AlertCircle, Send, Loader2 } from 'lucide-react';
+import { MessageSquare, Filter, Search, Trash2, CheckCircle, Clock, AlertCircle, Send, Loader2, X } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import { formatDateTime } from '../../utils/dateUtils';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -82,6 +82,24 @@ const Support: React.FC = () => {
             console.error('Error deleting ticket:', err);
             alert('Failed to delete ticket');
         }
+    };
+
+    const markAsRead = async (ticket: SupportTicket) => {
+        // Only mark as read if status is 'new'
+        if (ticket.status === 'new') {
+            try {
+                const { error } = await supabase
+                    .from('support_tickets')
+                    .update({ status: 'in-progress' })
+                    .eq('id', ticket.id);
+
+                if (error) throw error;
+                await fetchTickets(); // Refresh to update the list and counter
+            } catch (err) {
+                console.error('Error marking ticket as read:', err);
+            }
+        }
+        setSelectedTicket(ticket);
     };
 
     const submitResponse = async () => {
@@ -255,7 +273,7 @@ const Support: React.FC = () => {
                                 {filteredTickets.map((ticket) => (
                                     <tr
                                         key={ticket.id}
-                                        onClick={() => setSelectedTicket(ticket)}
+                                        onClick={() => markAsRead(ticket)}
                                         className="hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
                                     >
                                         <td className="px-6 py-4 whitespace-nowrap">
