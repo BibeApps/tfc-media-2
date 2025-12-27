@@ -13,7 +13,7 @@ interface SupportTicket {
     subject: string;
     message: string;
     priority: 'low' | 'medium' | 'high' | 'urgent';
-    status: 'new' | 'in-progress' | 'resolved' | 'closed';
+    status: 'new' | 'in-progress' | 'resolved';
     admin_response: string | null;
     responded_by: string | null;
     responded_at: string | null;
@@ -250,7 +250,6 @@ const Support: React.FC = () => {
                         <option value="new">New</option>
                         <option value="in-progress">In Progress</option>
                         <option value="resolved">Resolved</option>
-                        <option value="closed">Closed</option>
                     </select>
                     <select
                         value={priorityFilter}
@@ -398,13 +397,17 @@ const Support: React.FC = () => {
                                         </label>
                                         <select
                                             value={selectedTicket.status}
-                                            onChange={(e) => updateTicketStatus(selectedTicket.id, e.target.value)}
+                                            onChange={async (e) => {
+                                                const newStatus = e.target.value;
+                                                await updateTicketStatus(selectedTicket.id, newStatus);
+                                                // Update the selected ticket to reflect the change immediately
+                                                setSelectedTicket({ ...selectedTicket, status: newStatus as any });
+                                            }}
                                             className="w-full px-4 py-2 bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric"
                                         >
                                             <option value="new">New</option>
                                             <option value="in-progress">In Progress</option>
                                             <option value="resolved">Resolved</option>
-                                            <option value="closed">Closed</option>
                                         </select>
                                     </div>
                                     <div className="flex-1">

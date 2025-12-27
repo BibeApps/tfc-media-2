@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     subject TEXT NOT NULL,
     message TEXT NOT NULL,
     priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
-    status TEXT DEFAULT 'new' CHECK (status IN ('new', 'in-progress', 'resolved', 'closed')),
+    status TEXT DEFAULT 'new' CHECK (status IN ('new', 'in-progress', 'resolved')),
     admin_response TEXT,
     responded_by UUID REFERENCES profiles(id),
     responded_at TIMESTAMP,
