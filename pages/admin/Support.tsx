@@ -299,13 +299,10 @@ const Support: React.FC = () => {
                             <thead className="bg-gray-50 dark:bg-black/20 border-b border-gray-200 dark:border-white/10">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                                        Ticket #
+                                        Ticket # / Subject
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                                         Customer
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                                        Subject
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                                         Priority
