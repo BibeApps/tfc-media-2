@@ -15,6 +15,7 @@ interface SupportTicket {
     priority: 'low' | 'medium' | 'high' | 'urgent';
     status: 'new' | 'in-progress' | 'resolved';
     is_read: boolean; // Tracks if admin has viewed the ticket
+    is_reopened: boolean; // Tracks if client has reopened a resolved ticket
     admin_response: string | null;
     responded_by: string | null;
     responded_at: string | null;
@@ -148,6 +149,9 @@ const Support: React.FC = () => {
             if (responseText.trim()) {
                 updateData.admin_response = updatedResponse;
             }
+
+            // Clear is_reopened flag when admin responds
+            updateData.is_reopened = false;
 
             const { error } = await supabase
                 .from('support_tickets')
@@ -342,6 +346,11 @@ const Support: React.FC = () => {
                                                         {!ticket.is_read && (
                                                             <span className="px-2 py-0.5 text-xs font-bold bg-electric text-white rounded-full">
                                                                 UNREAD
+                                                            </span>
+                                                        )}
+                                                        {ticket.is_reopened && (
+                                                            <span className="px-2 py-0.5 text-xs font-bold bg-orange-500 text-white rounded-full flex items-center gap-1">
+                                                                🔄 REOPENED
                                                             </span>
                                                         )}
                                                     </div>

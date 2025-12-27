@@ -24,6 +24,7 @@ import Favorites from './pages/portal/Favorites';
 import Settings from './pages/portal/Settings';
 import MyEvents from './pages/portal/MyEvents';
 import MyBookings from './pages/portal/MyBookings';
+import SupportTickets from './pages/portal/SupportTickets';
 import Events from './pages/admin/Events';
 import Bookings from './pages/admin/Bookings';
 import Sessions from './pages/admin/Sessions';
