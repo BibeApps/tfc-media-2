@@ -31,6 +31,7 @@ const Support: React.FC = () => {
     const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
     const [responseText, setResponseText] = useState('');
     const [responding, setResponding] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
 
     useEffect(() => {
         fetchTickets();
