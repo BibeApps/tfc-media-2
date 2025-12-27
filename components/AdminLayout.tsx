@@ -35,10 +35,17 @@ const AdminLayout: React.FC = () => {
 
         // Set up real-time subscription for support tickets
         const channel = supabase
-            .channel('support_tickets_changes')
+            .channel('admin_support_tickets_changes')
             .on('postgres_changes',
-                { event: '*', schema: 'public', table: 'support_tickets' },
-                () => fetchUnreadSupportCount()
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'support_tickets'
+                },
+                (payload) => {
+                    console.log('Support ticket change detected:', payload);
+                    fetchUnreadSupportCount();
+                }
             )
             .subscribe();
 
