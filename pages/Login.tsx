@@ -78,15 +78,6 @@ const Login: React.FC = () => {
           </div>
         )}
 
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 p-4 rounded-lg flex items-start gap-3">
-          <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-700 dark:text-blue-300">
-            <p className="font-bold mb-1">Demo Credentials:</p>
-            <p>Admin: <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">admin@tfcmedia.com</span> / <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">admin</span></p>
-            <p>Client: <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">alex.doe@example.com</span> / <span className="font-mono bg-blue-100 dark:bg-blue-900/50 px-1 rounded">client</span></p>
-          </div>
-        </div>
-
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           <div className="space-y-4">
             <div>
