@@ -57,16 +57,18 @@ const Navbar: React.FC = () => {
 
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-8">
-              {navLinks.map((link) => (
-                <NavLink
-                  key={link.name}
-                  to={link.path}
-                  onClick={() => handleNavClick(link.path)}
-                  className={({ isActive: linkActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isActive(link.path) ? 'text-electric bg-electric/10' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}
-                >
-                  {link.name}
-                </NavLink>
-              ))}
+              {navLinks
+                .filter(link => link.name !== 'Gallery' || isAuthenticated)
+                .map((link) => (
+                  <NavLink
+                    key={link.name}
+                    to={link.path}
+                    onClick={() => handleNavClick(link.path)}
+                    className={({ isActive: linkActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isActive(link.path) ? 'text-electric bg-electric/10' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'}`}
+                  >
+                    {link.name}
+                  </NavLink>
+                ))}
 
               {/* Dynamic Auth Button - Updated text to LOGIN */}
               {isAuthenticated ? (
@@ -122,19 +124,21 @@ const Navbar: React.FC = () => {
             className="md:hidden bg-white dark:bg-charcoal border-b border-gray-200 dark:border-white/10"
           >
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              {navLinks.map((link) => (
-                <NavLink
-                  key={link.name}
-                  to={link.path}
-                  onClick={() => {
-                    handleNavClick(link.path);
-                    setIsMenuOpen(false);
-                  }}
-                  className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium ${isActive ? 'text-electric bg-electric/10' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-black/20'}`}
-                >
-                  {link.name}
-                </NavLink>
-              ))}
+              {navLinks
+                .filter(link => link.name !== 'Gallery' || isAuthenticated)
+                .map((link) => (
+                  <NavLink
+                    key={link.name}
+                    to={link.path}
+                    onClick={() => {
+                      handleNavClick(link.path);
+                      setIsMenuOpen(false);
+                    }}
+                    className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium ${isActive ? 'text-electric bg-electric/10' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-black/20'}`}
+                  >
+                    {link.name}
+                  </NavLink>
+                ))}
               <div className="border-t border-gray-200 dark:border-white/10 my-2 pt-2">
                 {isAuthenticated ? (
                   <button
@@ -683,7 +687,9 @@ const Footer: React.FC = () => {
             <h4 className="font-bold text-lg mb-6">Quick Links</h4>
             <ul className="space-y-3">
               <li><Link to="/portfolio" className="text-gray-400 hover:text-electric transition-colors">Portfolio</Link></li>
-              <li><Link to="/gallery" className="text-gray-400 hover:text-electric transition-colors">Client Galleries</Link></li>
+              {isAuthenticated && (
+                <li><Link to="/gallery" className="text-gray-400 hover:text-electric transition-colors">Client Galleries</Link></li>
+              )}
               <li><Link to="/about" className="text-gray-400 hover:text-electric transition-colors">About Us</Link></li>
               <li><Link to="/services" className="text-gray-400 hover:text-electric transition-colors">Services</Link></li>
               <li><Link to="/book" className="text-gray-400 hover:text-electric transition-colors">Book Now</Link></li>
