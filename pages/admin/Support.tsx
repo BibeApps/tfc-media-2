@@ -214,8 +214,6 @@ const Support: React.FC = () => {
         }
     };
 
-    const unreadCount = tickets.filter(t => t.status === 'new').length;
-
     return (
         <div className="p-8">
             <div className="mb-8">
