@@ -86,6 +86,14 @@ const GalleryManagerSimple: React.FC = () => {
     }, [projectSearch]);
 
 
+    // Sanitize user input before interpolating into PostgREST filter strings.
+    // Strips characters that have special meaning in PostgREST syntax:
+    // commas (filter separator), periods (operator separator), parentheses (grouping),
+    // percent signs (wildcard outside our own usage), and backslashes (escape char).
+    const sanitizeSearchInput = (input: string): string => {
+        return input.replace(/[,.\(\)%\\]/g, '');
+    };
+
     const fetchProjects = async (searchTerm = '') => {
         try {
             let query = supabase
@@ -95,7 +103,7 @@ const GalleryManagerSimple: React.FC = () => {
 
             if (searchTerm) {
                 // Server-side search across ALL projects (no limit when searching)
-                const search = searchTerm.toLowerCase();
+                const search = sanitizeSearchInput(searchTerm.toLowerCase());
                 query = query.or(`project_id.ilike.%${search}%,name.ilike.%${search}%,client_name.ilike.%${search}%,client_email.ilike.%${search}%`);
             } else {
                 // When no search, limit to recent 100 for performance

@@ -6,15 +6,20 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function getCorsHeaders(req: Request) {
+    const origin = req.headers.get('Origin') || ''
+    const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',')
+    const isAllowed = allowedOrigins.includes('*') || allowedOrigins.includes(origin)
+    return {
+        'Access-Control-Allow-Origin': isAllowed ? origin : allowedOrigins[0],
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    }
 }
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: getCorsHeaders(req) })
   }
 
   try {
@@ -23,7 +28,7 @@ Deno.serve(async (req) => {
     if (!authHeader) {
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -49,7 +54,7 @@ Deno.serve(async (req) => {
     if (callerError || !caller) {
       return new Response(
         JSON.stringify({ error: 'Invalid or expired token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
     const { data: callerProfile } = await supabaseAdmin
@@ -57,7 +62,7 @@ Deno.serve(async (req) => {
     if (!callerProfile || callerProfile.role !== 'admin') {
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 403, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
       )
     }
 
@@ -69,7 +74,7 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: 'User ID is required' }),
         {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }
         }
       )
     }
@@ -84,7 +89,7 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: authError.message }),
         {
           status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }
         }
       )
     }
@@ -104,7 +109,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ success: true, message: 'User deleted successfully' }),
       {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }
       }
     )
 
@@ -114,7 +119,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ error: error.message || 'An unexpected error occurred' }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }
       }
     )
   }

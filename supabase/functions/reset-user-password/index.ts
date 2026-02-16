@@ -2,12 +2,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function getCorsHeaders(req: Request) {
+    const origin = req.headers.get('Origin') || ''
+    const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',')
+    const isAllowed = allowedOrigins.includes('*') || allowedOrigins.includes(origin)
+    return {
+        'Access-Control-Allow-Origin': isAllowed ? origin : allowedOrigins[0],
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    }
 }
 
-// Generate a secure random password
+// Generate a cryptographically secure random password
 function generateSecurePassword(length = 12): string {
     const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     const lowercase = 'abcdefghijklmnopqrstuvwxyz'
@@ -15,26 +20,38 @@ function generateSecurePassword(length = 12): string {
     const symbols = '!@#$%^&*'
     const allChars = uppercase + lowercase + numbers + symbols
 
+    // Helper to get a cryptographically secure random index
+    const secureRandomIndex = (max: number): number => {
+        const array = new Uint32Array(1)
+        crypto.getRandomValues(array)
+        return array[0] % max
+    }
+
     let password = ''
     // Ensure at least one of each type
-    password += uppercase[Math.floor(Math.random() * uppercase.length)]
-    password += lowercase[Math.floor(Math.random() * lowercase.length)]
-    password += numbers[Math.floor(Math.random() * numbers.length)]
-    password += symbols[Math.floor(Math.random() * symbols.length)]
+    password += uppercase[secureRandomIndex(uppercase.length)]
+    password += lowercase[secureRandomIndex(lowercase.length)]
+    password += numbers[secureRandomIndex(numbers.length)]
+    password += symbols[secureRandomIndex(symbols.length)]
 
     // Fill the rest randomly
     for (let i = password.length; i < length; i++) {
-        password += allChars[Math.floor(Math.random() * allChars.length)]
+        password += allChars[secureRandomIndex(allChars.length)]
     }
 
-    // Shuffle the password
-    return password.split('').sort(() => Math.random() - 0.5).join('')
+    // Fisher-Yates shuffle using crypto.getRandomValues
+    const chars = password.split('')
+    for (let i = chars.length - 1; i > 0; i--) {
+        const j = secureRandomIndex(i + 1);
+        [chars[i], chars[j]] = [chars[j], chars[i]]
+    }
+    return chars.join('')
 }
 
 Deno.serve(async (req) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
+        return new Response('ok', { headers: getCorsHeaders(req) })
     }
 
     try {
@@ -43,7 +60,7 @@ Deno.serve(async (req) => {
         if (!authHeader) {
             return new Response(
                 JSON.stringify({ error: 'Missing authorization header' }),
-                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
             )
         }
 
@@ -69,7 +86,7 @@ Deno.serve(async (req) => {
         if (callerError || !caller) {
             return new Response(
                 JSON.stringify({ error: 'Invalid or expired token' }),
-                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
             )
         }
         const { data: callerProfile } = await supabaseAdmin
@@ -77,7 +94,7 @@ Deno.serve(async (req) => {
         if (!callerProfile || callerProfile.role !== 'admin') {
             return new Response(
                 JSON.stringify({ error: 'Admin access required' }),
-                { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 403, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
             )
         }
 
@@ -89,7 +106,7 @@ Deno.serve(async (req) => {
                 JSON.stringify({ error: 'User ID is required' }),
                 {
                     status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }
                 }
             )
         }
@@ -106,7 +123,7 @@ Deno.serve(async (req) => {
                 JSON.stringify({ error: 'User not found' }),
                 {
                     status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }
                 }
             )
         }
@@ -126,7 +143,7 @@ Deno.serve(async (req) => {
                 JSON.stringify({ error: updateError.message }),
                 {
                     status: 500,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }
                 }
             )
         }
@@ -244,7 +261,7 @@ Deno.serve(async (req) => {
             }),
             {
                 status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }
             }
         )
 
@@ -254,7 +271,7 @@ Deno.serve(async (req) => {
             JSON.stringify({ error: error.message || 'An unexpected error occurred' }),
             {
                 status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }
             }
         )
     }

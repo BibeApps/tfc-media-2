@@ -5,6 +5,67 @@ import { supabaseUrl, supabaseAnonKey } from '../supabaseClient';
 
 const genAI = new GoogleGenerativeAI((import.meta as any).env?.VITE_GEMINI_API_KEY || '');
 
+// --- File Upload Security Constants ---
+
+/** Maximum file size for image uploads: 50MB */
+const MAX_IMAGE_FILE_SIZE = 50 * 1024 * 1024;
+
+/** Maximum file size for video uploads: 500MB */
+const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
+
+/** Allowed MIME types for media uploads */
+const ALLOWED_MIME_TYPES: Record<string, string[]> = {
+    // Image MIME types and their valid extensions
+    'image/jpeg': ['jpg', 'jpeg'],
+    'image/png': ['png'],
+    'image/gif': ['gif'],
+    'image/webp': ['webp'],
+    'image/heic': ['heic'],
+    'image/heif': ['heif'],
+    // Video MIME types and their valid extensions
+    'video/mp4': ['mp4'],
+    'video/quicktime': ['mov'],
+    'video/webm': ['webm'],
+    'video/x-msvideo': ['avi'],
+};
+
+/**
+ * Validate a media file before upload.
+ * Checks MIME type allowlist, file extension match, and file size limits.
+ * Throws an error with a descriptive message if validation fails.
+ */
+const validateMediaFile = (file: File): void => {
+    // 1. Check MIME type against allowlist
+    const allowedExtensions = ALLOWED_MIME_TYPES[file.type];
+    if (!allowedExtensions) {
+        throw new Error(
+            `File type "${file.type}" is not allowed. ` +
+            `Permitted types: ${Object.keys(ALLOWED_MIME_TYPES).join(', ')}`
+        );
+    }
+
+    // 2. Validate file extension matches the MIME type
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+        throw new Error(
+            `File extension ".${fileExtension || '(none)'}" does not match MIME type "${file.type}". ` +
+            `Expected one of: ${allowedExtensions.map(ext => '.' + ext).join(', ')}`
+        );
+    }
+
+    // 3. Enforce maximum file size based on media category
+    const isVideo = file.type.startsWith('video/');
+    const maxSize = isVideo ? MAX_VIDEO_FILE_SIZE : MAX_IMAGE_FILE_SIZE;
+    const maxSizeLabel = isVideo ? '500MB' : '50MB';
+
+    if (file.size > maxSize) {
+        throw new Error(
+            `File "${file.name}" (${(file.size / (1024 * 1024)).toFixed(1)}MB) exceeds the ` +
+            `maximum allowed size of ${maxSizeLabel} for ${isVideo ? 'video' : 'image'} uploads.`
+        );
+    }
+};
+
 /**
  * Generate thumbnail image using AI
  */
@@ -186,6 +247,9 @@ export const uploadOriginalMedia = async (
     try {
         console.log('=== uploadOriginalMedia START ===');
         console.log('Input file.name:', file.name);
+
+        // Validate file before proceeding with upload
+        validateMediaFile(file);
 
         // Get file extension
         const fileExtension = file.name.split('.').pop() || 'jpg';

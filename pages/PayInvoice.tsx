@@ -6,6 +6,12 @@ import { supabase } from '../supabaseClient';
 import { Invoice } from '../types';
 import { formatDate } from '../utils/dateFormatter';
 
+// Validates that a payment token is well-formed: alphanumeric, hyphens, underscores, 20-200 chars
+const isValidPaymentToken = (token: string): boolean => {
+    const tokenRegex = /^[a-zA-Z0-9\-_]{20,200}$/;
+    return tokenRegex.test(token);
+};
+
 const PayInvoice: React.FC = () => {
     const { token } = useParams<{ token: string }>();
     const navigate = useNavigate();
@@ -19,9 +25,17 @@ const PayInvoice: React.FC = () => {
     const [isPartialRequest, setIsPartialRequest] = useState(false);
 
     useEffect(() => {
-        if (token) {
-            fetchInvoice();
+        if (!token) {
+            setError('No payment token provided');
+            setLoading(false);
+            return;
         }
+        if (!isValidPaymentToken(token)) {
+            setError('Invalid payment token format');
+            setLoading(false);
+            return;
+        }
+        fetchInvoice();
     }, [token, location]);
 
     const fetchInvoice = async () => {

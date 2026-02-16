@@ -12,21 +12,33 @@ export const generateRandomPassword = (length: number = 12): string => {
     const symbols = '!@#$%^&*';
     const allChars = lowercase + uppercase + numbers + symbols;
 
+    // Helper to get a cryptographically secure random index
+    const secureRandomIndex = (max: number): number => {
+        const array = new Uint32Array(1);
+        crypto.getRandomValues(array);
+        return array[0] % max;
+    };
+
     let password = '';
 
     // Ensure at least one of each type
-    password += lowercase[Math.floor(Math.random() * lowercase.length)];
-    password += uppercase[Math.floor(Math.random() * uppercase.length)];
-    password += numbers[Math.floor(Math.random() * numbers.length)];
-    password += symbols[Math.floor(Math.random() * symbols.length)];
+    password += lowercase[secureRandomIndex(lowercase.length)];
+    password += uppercase[secureRandomIndex(uppercase.length)];
+    password += numbers[secureRandomIndex(numbers.length)];
+    password += symbols[secureRandomIndex(symbols.length)];
 
     // Fill the rest randomly
     for (let i = password.length; i < length; i++) {
-        password += allChars[Math.floor(Math.random() * allChars.length)];
+        password += allChars[secureRandomIndex(allChars.length)];
     }
 
-    // Shuffle the password
-    return password.split('').sort(() => Math.random() - 0.5).join('');
+    // Fisher-Yates shuffle using crypto.getRandomValues
+    const chars = password.split('');
+    for (let i = chars.length - 1; i > 0; i--) {
+        const j = secureRandomIndex(i + 1);
+        [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+    return chars.join('');
 };
 
 /**

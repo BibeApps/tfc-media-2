@@ -36,6 +36,14 @@ export default function GalleryEdit() {
     const [isExpanded, setIsExpanded] = useState(false);
     const itemsPerPage = 10;
 
+    // Sanitize user input before interpolating into PostgREST filter strings.
+    // Strips characters that have special meaning in PostgREST syntax:
+    // commas (filter separator), periods (operator separator), parentheses (grouping),
+    // percent signs (wildcard outside our own usage), and backslashes (escape char).
+    const sanitizeSearchInput = (input: string): string => {
+        return input.replace(/[,.\(\)%\\]/g, '');
+    };
+
     // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -61,7 +69,7 @@ export default function GalleryEdit() {
                 .select('id, name, date', { count: 'exact' });
 
             if (debouncedSearch) {
-                query = query.ilike('name', `%${debouncedSearch}%`);
+                query = query.ilike('name', `%${sanitizeSearchInput(debouncedSearch)}%`);
             }
 
             const { data, count, error } = await query
@@ -84,7 +92,7 @@ export default function GalleryEdit() {
                 .select('id, name, event_id, date', { count: 'exact' });
 
             if (debouncedSearch) {
-                query = query.ilike('name', `%${debouncedSearch}%`);
+                query = query.ilike('name', `%${sanitizeSearchInput(debouncedSearch)}%`);
             }
 
             const { data, count, error } = await query

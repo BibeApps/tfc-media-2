@@ -16,14 +16,41 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
 }
 
-// Helper function to generate temporary password
+// Helper function to generate a cryptographically secure temporary password
 function generateTempPassword(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-    let password = 'TFC-2026-'
-    for (let i = 0; i < 8; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length))
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz'
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    const numbers = '0123456789'
+    const symbols = '!@#$%^&*'
+    const allChars = lowercase + uppercase + numbers + symbols
+
+    // Helper to get a cryptographically secure random index
+    const secureRandomIndex = (max: number): number => {
+        const array = new Uint32Array(1)
+        crypto.getRandomValues(array)
+        return array[0] % max
     }
-    return password
+
+    let password = ''
+
+    // Ensure at least one of each character type
+    password += lowercase[secureRandomIndex(lowercase.length)]
+    password += uppercase[secureRandomIndex(uppercase.length)]
+    password += numbers[secureRandomIndex(numbers.length)]
+    password += symbols[secureRandomIndex(symbols.length)]
+
+    // Fill the rest randomly (16 chars total)
+    for (let i = password.length; i < 16; i++) {
+        password += allChars[secureRandomIndex(allChars.length)]
+    }
+
+    // Fisher-Yates shuffle using crypto.getRandomValues
+    const chars = password.split('')
+    for (let i = chars.length - 1; i > 0; i--) {
+        const j = secureRandomIndex(i + 1);
+        [chars[i], chars[j]] = [chars[j], chars[i]]
+    }
+    return chars.join('')
 }
 
 serve(async (req) => {
