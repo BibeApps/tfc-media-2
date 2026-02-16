@@ -1,0 +1,39 @@
+{
+  "name": "tfc-media",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@google/genai": "^1.33.0",
+    "@google/generative-ai": "^0.24.1",
+    "@stripe/react-stripe-js": "^5.4.1",
+    "@stripe/stripe-js": "^8.6.4",
+    "@supabase/supabase-js": "2.39.7",
+    "framer-motion": "11.0.8",
+    "lucide-react": "0.344.0",
+    "prop-types": "15.8.1",
+    "qrcode.react": "^4.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "6.22.3",
+    "recharts": "2.12.2",
+    "resend": "^6.6.0",
+    "tus-js-client": "^4.3.1",
+    "twilio": "^5.11.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}

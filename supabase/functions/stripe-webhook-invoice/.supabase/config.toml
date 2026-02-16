@@ -1,0 +1,2 @@
+[functions.stripe-webhook-invoice]
+verify_jwt = false

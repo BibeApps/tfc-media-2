@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting...</title>
+    <script>
+        // Redirect from /auth/callback to /#/auth/callback for HashRouter
+        if (window.location.pathname === '/auth/callback') {
+            const hash = window.location.hash || '';
+            window.location.href = '/#/auth/callback' + hash;
+        }
+    </script>
+</head>
+
+<body>
+    <p>Redirecting...</p>
+</body>
+
+</html>
