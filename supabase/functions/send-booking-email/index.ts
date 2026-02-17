@@ -25,12 +25,18 @@ serve(async (req) => {
     try {
         const { adminEmail, customerName, customerEmail, customerPhone, serviceType, bookingDate, bookingTime }: BookingEmailRequest = await req.json()
 
-        // Format date for email
+        // Format date for email — parse YYYY-MM-DD manually to avoid
+        // UTC timezone shift (new Date("2026-03-15") → UTC midnight → off by one day)
         const formatEmailDate = (dateString: string): string => {
             try {
-                const date = new Date(dateString);
-                if (isNaN(date.getTime())) return dateString;
-                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                const parts = dateString.split('-');
+                if (parts.length === 3) {
+                    const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                    if (!isNaN(date.getTime())) {
+                        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                    }
+                }
+                return dateString;
             } catch {
                 return dateString;
             }
