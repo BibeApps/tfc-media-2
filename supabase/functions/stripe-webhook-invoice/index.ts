@@ -31,10 +31,10 @@ serve(async (req) => {
     }
 
     try {
-        // Get Stripe webhook secret
-        const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')
+        // Get Stripe webhook secret (invoice-specific)
+        const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET_INVOICE')
         if (!webhookSecret) {
-            throw new Error('STRIPE_WEBHOOK_SECRET not configured')
+            throw new Error('STRIPE_WEBHOOK_SECRET_INVOICE not configured')
         }
 
         // Get Stripe secret key

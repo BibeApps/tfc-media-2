@@ -11,8 +11,7 @@ import { SupportModal } from './SupportModal';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 // --- STRIPE CONFIGURATION ---
-const STRIPE_PUBLISHABLE_KEY = "pk_test_51SbMOd2Q5sKQr6xREozZINHdxVg2xYDQMzfV38IqsJRP8KUEkcJyTgAyX0dQvtW4fdy3nP8vKC5eRK1HhVidNI5q00MzKPaQH1";
-const stripePromise = loadStripe(STRIPE_PUBLISHABLE_KEY);
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
