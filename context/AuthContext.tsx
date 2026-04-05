@@ -179,6 +179,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
 
         if (error) {
+          // Replace Supabase's raw "User is banned" with a user-friendly message
+          if (error.message?.toLowerCase().includes('banned')) {
+            return { success: false, message: 'This account no longer exists. Please contact support.' };
+          }
           return { success: false, message: error.message };
         }
 
