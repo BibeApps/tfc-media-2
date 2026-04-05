@@ -8,15 +8,20 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import Stripe from 'https://esm.sh/stripe@14.5.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function getCorsHeaders(req: Request) {
+    const origin = req.headers.get('Origin') || ''
+    const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map((o: string) => o.trim())
+    const isAllowed = allowedOrigins.includes(origin)
+    return {
+        'Access-Control-Allow-Origin': isAllowed ? origin : (allowedOrigins[0] || ''),
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    }
 }
 
 serve(async (req) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
+        return new Response('ok', { headers: getCorsHeaders(req) })
     }
 
     try {
@@ -104,7 +109,7 @@ serve(async (req) => {
                 paymentIntentId: paymentIntent.id
             }),
             {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
                 status: 200,
             }
         )
@@ -113,10 +118,10 @@ serve(async (req) => {
         return new Response(
             JSON.stringify({
                 success: false,
-                error: error.message
+                error: 'Failed to create payment intent'
             }),
             {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
                 status: 400,
             }
         )

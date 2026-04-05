@@ -2,9 +2,18 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function getCorsHeaders(req: Request) {
+    const origin = req.headers.get('Origin') || ''
+    const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map((o: string) => o.trim())
+    const isAllowed = allowedOrigins.includes(origin)
+    return {
+        'Access-Control-Allow-Origin': isAllowed ? origin : (allowedOrigins[0] || ''),
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    }
+}
+
+function escapeHtml(str: string): string {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
 }
 
 interface ProjectEmailRequest {
@@ -19,11 +28,15 @@ interface ProjectEmailRequest {
 serve(async (req) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
+        return new Response('ok', { headers: getCorsHeaders(req) })
     }
 
     try {
         const { clientName, clientEmail, projectName, serviceType, eventDate, portalUrl }: ProjectEmailRequest = await req.json()
+
+        const safeName = escapeHtml(clientName || '')
+        const safeProject = escapeHtml(projectName || '')
+        const safeService = escapeHtml(serviceType || '')
 
         const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
@@ -34,7 +47,7 @@ serve(async (req) => {
             body: JSON.stringify({
                 from: 'TFC Media <noreply@tfcmediagroup.com>',
                 to: [clientEmail],
-                subject: `Your Project "${projectName}" Has Been Added`,
+                subject: `Your Project "${safeProject}" Has Been Added`,
                 html: `
           <!DOCTYPE html>
           <html>
@@ -49,10 +62,10 @@ serve(async (req) => {
               </div>
               
               <div style="background: #ffffff; padding: 40px 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
-                <p style="font-size: 16px; margin-bottom: 20px;">Hi ${clientName},</p>
+                <p style="font-size: 16px; margin-bottom: 20px;">Hi ${safeName},</p>
                 
                 <p style="font-size: 16px; margin-bottom: 20px;">
-                  Great news! Your project <strong>"${projectName}"</strong> has been added to our system and we're excited to get started!
+                  Great news! Your project <strong>"${safeProject}"</strong> has been added to our system and we're excited to get started!
                 </p>
                 
                 <div style="background: #f9fafb; border-left: 4px solid #00D9FF; padding: 20px; margin: 30px 0; border-radius: 4px;">
@@ -60,12 +73,12 @@ serve(async (req) => {
                   <table style="width: 100%; border-collapse: collapse;">
                     <tr>
                       <td style="padding: 8px 0; color: #6b7280; font-weight: 600;">Project Name:</td>
-                      <td style="padding: 8px 0; color: #111827;">${projectName}</td>
+                      <td style="padding: 8px 0; color: #111827;">${safeProject}</td>
                     </tr>
                     ${serviceType ? `
                     <tr>
                       <td style="padding: 8px 0; color: #6b7280; font-weight: 600;">Service Type:</td>
-                      <td style="padding: 8px 0; color: #111827;">${serviceType}</td>
+                      <td style="padding: 8px 0; color: #111827;">${safeService}</td>
                     </tr>
                     ` : ''}
                     ${eventDate ? `
@@ -123,13 +136,13 @@ serve(async (req) => {
         }
 
         return new Response(JSON.stringify({ success: true, data }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
             status: 200,
         })
     } catch (error) {
         console.error('Error in send-project-email function:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        return new Response(JSON.stringify({ error: 'Failed to send project email' }), {
+            headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
             status: 400,
         })
     }

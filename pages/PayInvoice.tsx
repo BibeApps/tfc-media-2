@@ -44,12 +44,7 @@ const PayInvoice: React.FC = () => {
             setError(null);
 
             const { data, error: fetchError } = await supabase
-                .from('invoices')
-                .select(`
-                    *,
-                    service_type:service_types(name, description)
-                `)
-                .eq('payment_token', token)
+                .rpc('get_invoice_by_payment_token', { p_token: token })
                 .single();
 
             if (fetchError) throw fetchError;
@@ -63,6 +58,16 @@ const PayInvoice: React.FC = () => {
             if (data.status === 'fully_paid') {
                 setError('This invoice has already been paid in full');
                 return;
+            }
+
+            // Fetch service type separately (public table, separate from token-gated invoice)
+            if (data.service_type_id) {
+                const { data: st } = await supabase
+                    .from('service_types')
+                    .select('name, description')
+                    .eq('id', data.service_type_id)
+                    .single();
+                if (st) data.service_type = st;
             }
 
             setInvoice(data);
@@ -96,16 +101,12 @@ const PayInvoice: React.FC = () => {
 
             // Create Stripe checkout session for invoice
             // Uses paymentAmount which might be less than amount_due
+            // Only send invoiceId — amount and client details are fetched from DB server-side
             const { data, error: sessionError } = await supabase.functions.invoke('create-invoice-checkout', {
                 body: {
                     invoiceId: invoice.id,
-                    invoiceNumber: invoice.invoice_number,
-                    amount: paymentAmount, // Use the determined amount
-                    clientEmail: invoice.client_email,
-                    clientName: invoice.client_name,
-                    title: invoice.title,
                     successUrl: `${window.location.origin}/#/payment-success?invoice=${invoice.invoice_number}`,
-                    cancelUrl: window.location.href, // Reload current page on cancel
+                    cancelUrl: window.location.href,
                 },
             });
 

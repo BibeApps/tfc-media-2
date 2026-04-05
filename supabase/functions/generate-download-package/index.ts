@@ -3,17 +3,22 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import JSZip from 'https://esm.sh/jszip@3.10.1';
 import { downloadPackageReadyTemplate } from '../../../services/emailTemplates/downloadPackageReady.ts';
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+function getCorsHeaders(req: Request) {
+    const origin = req.headers.get('Origin') || '';
+    const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map((o: string) => o.trim());
+    const isAllowed = allowedOrigins.includes(origin);
+    return {
+        'Access-Control-Allow-Origin': isAllowed ? origin : (allowedOrigins[0] || ''),
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    };
+}
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
 serve(async (req) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders });
+        return new Response('ok', { headers: getCorsHeaders(req) });
     }
 
     try {
@@ -292,7 +297,7 @@ serve(async (req) => {
                 message: `Download package ready with ${successCount} items (${failCount} failed)`
             }),
             {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
                 status: 200,
             }
         );
@@ -324,10 +329,10 @@ serve(async (req) => {
         return new Response(
             JSON.stringify({
                 success: false,
-                error: error.message
+                error: 'Failed to generate download package'
             }),
             {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
                 status: 500,
             }
         );

@@ -3,9 +3,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function getCorsHeaders(req: Request) {
+    const origin = req.headers.get('Origin') || ''
+    const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map((o: string) => o.trim())
+    const isAllowed = allowedOrigins.includes(origin)
+    return {
+        'Access-Control-Allow-Origin': isAllowed ? origin : (allowedOrigins[0] || ''),
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    }
 }
 
 interface EmailRequest {
@@ -18,7 +23,7 @@ interface EmailRequest {
 serve(async (req) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
+        return new Response('ok', { headers: getCorsHeaders(req) })
     }
 
     try {
@@ -27,7 +32,7 @@ serve(async (req) => {
         if (!authHeader) {
             return new Response(
                 JSON.stringify({ success: false, error: 'Missing authorization header' }),
-                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
             )
         }
 
@@ -40,7 +45,7 @@ serve(async (req) => {
         if (callerError || !caller) {
             return new Response(
                 JSON.stringify({ success: false, error: 'Invalid or expired token' }),
-                { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 401, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
             )
         }
 
@@ -59,7 +64,7 @@ serve(async (req) => {
                 {
                     status: 400,
                     headers: {
-                        ...corsHeaders,
+                        ...getCorsHeaders(req),
                         'Content-Type': 'application/json',
                     }
                 }
@@ -76,7 +81,7 @@ serve(async (req) => {
                 {
                     status: 500,
                     headers: {
-                        ...corsHeaders,
+                        ...getCorsHeaders(req),
                         'Content-Type': 'application/json',
                     }
                 }
@@ -113,7 +118,7 @@ serve(async (req) => {
                 {
                     status: res.status,
                     headers: {
-                        ...corsHeaders,
+                        ...getCorsHeaders(req),
                         'Content-Type': 'application/json',
                     }
                 }
@@ -122,16 +127,16 @@ serve(async (req) => {
 
         console.log('✅ Email sent successfully! ID:', data.id)
         return new Response(JSON.stringify({ success: true, data }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
             status: 200,
         })
     } catch (error) {
         console.error('❌ Error in send-email:', error)
         return new Response(JSON.stringify({
             success: false,
-            error: error.message || 'Internal server error'
+            error: 'Failed to send email'
         }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
             status: 500,
         })
     }

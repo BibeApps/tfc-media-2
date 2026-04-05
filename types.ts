@@ -122,12 +122,14 @@ export interface ClientUser {
   avatar?: string;
   accountType: 'customer' | 'repeat_customer' | 'vip';
   account_type?: string; // DB field name
-  status: 'active' | 'onboarding' | 'inactive';
+  status: 'active' | 'onboarding' | 'inactive' | 'archived';
   role: 'admin' | 'client';
   totalSpent: number;
   total_spent?: number; // DB field name
   memberSince: string;
   member_since?: string; // DB field name
+  archived_at?: string;
+  archived_by?: string;
   // Notification preferences
   notification_project_updates?: boolean;
   notification_messages?: boolean;
@@ -152,7 +154,9 @@ export interface Profile {
   country: string;
   total_spent: number;
   member_since: string;
-  status: 'active' | 'onboarding' | 'inactive';
+  status: 'active' | 'onboarding' | 'inactive' | 'archived';
+  archived_at?: string;
+  archived_by?: string;
 }
 
 export type ProjectStatus = 'not_started' | 'in_progress' | 'completed' | 'uploaded' | 'cancelled';

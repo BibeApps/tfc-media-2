@@ -42,7 +42,7 @@ export const ClientProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     
     try {
         // Fetch from 'profiles' (was app_users)
-        const { data, error } = await supabase.from('profiles').select('*');
+        const { data, error } = await supabase.from('profiles').select('*').is('archived_at', null);
         
         if (error) {
             throw error;

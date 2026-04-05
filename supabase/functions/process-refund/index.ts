@@ -37,16 +37,47 @@ serve(async (req) => {
             httpClient: Stripe.createFetchHttpClient(),
         })
 
-        // Initialize Supabase client
+        // Verify caller is authenticated and is an admin
+        const authHeader = req.headers.get('Authorization')
+        if (!authHeader) {
+            return new Response(
+                JSON.stringify({ error: 'Unauthorized' }),
+                { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 401 }
+            )
+        }
+
         const supabaseClient = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-            {
-                global: {
-                    headers: { Authorization: req.headers.get('Authorization')! },
-                },
-            }
+            { global: { headers: { Authorization: authHeader } } }
         )
+
+        const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+        if (authError || !user) {
+            return new Response(
+                JSON.stringify({ error: 'Unauthorized' }),
+                { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 401 }
+            )
+        }
+
+        // Admin-only: verify role in profiles table using service role client
+        const supabaseAdmin = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        )
+
+        const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+
+        if (profile?.role !== 'admin') {
+            return new Response(
+                JSON.stringify({ error: 'Forbidden' }),
+                { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 403 }
+            )
+        }
 
         // Parse request body
         const { orderId, amount, reason } = await req.json()
@@ -113,10 +144,10 @@ serve(async (req) => {
     } catch (error) {
         console.error('Error processing refund:', error)
         return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: 'Failed to process refund' }),
             {
                 headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
-                status: 400,
+                status: 500,
             }
         )
     }

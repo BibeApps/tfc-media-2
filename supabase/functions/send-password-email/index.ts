@@ -1,18 +1,30 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function getCorsHeaders(req: Request) {
+    const origin = req.headers.get('Origin') || ''
+    const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map((o: string) => o.trim())
+    const isAllowed = allowedOrigins.includes(origin)
+    return {
+        'Access-Control-Allow-Origin': isAllowed ? origin : (allowedOrigins[0] || ''),
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    }
+}
+
+function escapeHtml(str: string): string {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
 }
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: getCorsHeaders(req) })
   }
 
   try {
     const { email, name, tempPassword, isReset } = await req.json()
+
+    const safeName = escapeHtml(name || '')
+    const safeTempPassword = escapeHtml(tempPassword || '')
 
     // Get Resend API key from environment
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
@@ -64,13 +76,13 @@ serve(async (req) => {
                   <h1>${headerTitle}</h1>
                 </div>
                 <div class="content">
-                  <p>Dear ${name},</p>
+                  <p>Dear ${safeName},</p>
                   
                   <p>${introText}</p>
                   
                   <div class="password-box">
                     <p style="margin: 0; font-size: 14px; color: #666;">Temporary Password</p>
-                    <p class="password">${tempPassword}</p>
+                    <p class="password">${safeTempPassword}</p>
                   </div>
                   
                   <div class="warning">
@@ -84,7 +96,7 @@ serve(async (req) => {
                     <li>You'll be prompted to create a new password</li>
                   </ol>
                   
-                  <a href="${Deno.env.get('APP_URL') || 'http://localhost:3001'}/#/login" class="button">Go to Login</a>
+                  <a href="${Deno.env.get('APP_URL') || 'https://tfcmediagroup.com'}/#/login" class="button">Go to Login</a>
                   
                   <p style="margin-top: 30px;">If you have any questions, please contact your administrator.</p>
                   
@@ -112,16 +124,16 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ success: true, messageId: data.id }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
         status: 200,
       }
     )
   } catch (error) {
     console.error('Error sending email:', error)
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: 'Failed to send password email' }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
         status: 400,
       }
     )

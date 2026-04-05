@@ -102,6 +102,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .single();
 
           if (profile && !error) {
+            // Block archived users from accessing the app
+            if (profile.archived_at) {
+              await supabase.auth.signOut();
+              setUser(null);
+              setLoading(false);
+              return;
+            }
             setUser(mapUser(profile));
           } else {
             // Fallback if profile missing but auth exists
@@ -184,6 +191,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .single();
 
           if (profile && !profileError) {
+            // Block archived users from logging in
+            if (profile.archived_at) {
+              await supabase.auth.signOut();
+              return { success: false, message: 'Your account has been deactivated. Please contact support.' };
+            }
+
             const isOnboarding = profile.status === 'onboarding';
 
             // Update status to active if this is first login

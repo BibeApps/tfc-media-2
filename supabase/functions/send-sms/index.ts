@@ -108,7 +108,7 @@ serve(async (req) => {
     } catch (error) {
         console.error('Error sending SMS:', error)
         return new Response(
-            JSON.stringify({ success: false, error: error.message }),
+            JSON.stringify({ success: false, error: 'Failed to send SMS' }),
             {
                 headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
                 status: 400,

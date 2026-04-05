@@ -2,15 +2,35 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function getCorsHeaders(req: Request) {
+    const origin = req.headers.get('Origin') || ''
+    const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map((o: string) => o.trim())
+    const isAllowed = allowedOrigins.includes(origin)
+    return {
+        'Access-Control-Allow-Origin': isAllowed ? origin : (allowedOrigins[0] || ''),
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    }
+}
+
+function escapeHtml(str: string): string {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+}
+
+const PRIORITY_COLORS: Record<string, string> = {
+    urgent: '#f44336',
+    high: '#ff9800',
+    medium: '#2196F3',
+    low: '#4CAF50',
 }
 
 Deno.serve(async (req) => {
-    // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
+        return new Response('ok', { headers: getCorsHeaders(req) })
     }
 
     try {
@@ -21,36 +41,33 @@ Deno.serve(async (req) => {
             throw new Error('RESEND_API_KEY not configured')
         }
 
-        const APP_URL = Deno.env.get('APP_URL') || 'http://localhost:3001'
+        const APP_URL = Deno.env.get('APP_URL') || 'https://tfcmediagroup.com'
 
-        // Create Supabase client to fetch settings
+        // HTML-escape all user-supplied fields before embedding in templates
+        const safeName = escapeHtml(name || '')
+        const safeEmail = escapeHtml(email || '')
+        const safeSubject = escapeHtml(subject || '')
+        const safeMessage = escapeHtml(message || '')
+        const safeTicketNumber = escapeHtml(String(ticketNumber || ''))
+        // Priority is restricted to known values — use only if in allowed set
+        const safePriority = Object.keys(PRIORITY_COLORS).includes(priority) ? priority : 'low'
+        const priorityColor = PRIORITY_COLORS[safePriority]
+
         const supabaseAdmin = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
-                }
-            }
+            { auth: { autoRefreshToken: false, persistSession: false } }
         )
 
-        // Fetch contact email from site settings
-        const { data: settings, error: settingsError } = await supabaseAdmin
+        const { data: settings } = await supabaseAdmin
             .from('site_settings')
             .select('contact_email')
             .single()
 
-        if (settingsError) {
-            console.error('Error fetching settings:', settingsError)
-        }
-
-        // Use contact email from settings, fallback to default if not set
         const adminEmail = settings?.contact_email || 'admin@tfcmedia.com'
-        console.log('Sending support ticket notification to:', adminEmail)
 
         // Send email to admin
-        const adminEmailResponse = await fetch('https://api.resend.com/emails', {
+        await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -59,7 +76,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
                 from: 'TFC Media Support <noreply@tfcmediagroup.com>',
                 to: [adminEmail],
-                subject: `New Support Ticket #${ticketNumber}`,
+                subject: `New Support Ticket #${safeTicketNumber}`,
                 html: `
                     <!DOCTYPE html>
                     <html>
@@ -70,7 +87,7 @@ Deno.serve(async (req) => {
                                 .header { background-color: #1a1a1a; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
                                 .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }
                                 .ticket-info { background-color: #fff; border-left: 4px solid #4CAF50; padding: 15px; margin: 20px 0; }
-                                .priority-${priority} { color: ${priority === 'urgent' ? '#f44336' : priority === 'high' ? '#ff9800' : priority === 'medium' ? '#2196F3' : '#4CAF50'}; font-weight: bold; }
+                                .priority-label { color: ${priorityColor}; font-weight: bold; }
                                 .button { display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
                                 .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
                             </style>
@@ -78,23 +95,19 @@ Deno.serve(async (req) => {
                         <body>
                             <div class="container">
                                 <div class="header">
-                                    <h1>🎫 New Support Ticket</h1>
+                                    <h1>New Support Ticket</h1>
                                 </div>
                                 <div class="content">
-                                    <h2>Ticket #${ticketNumber}</h2>
-                                    
+                                    <h2>Ticket #${safeTicketNumber}</h2>
                                     <div class="ticket-info">
-                                        <p><strong>Priority:</strong> <span class="priority-${priority}">${priority.toUpperCase()}</span></p>
-                                        <p><strong>From:</strong> ${name}</p>
-                                        <p><strong>Email:</strong> ${email}</p>
-                                        <p><strong>Subject:</strong> ${subject}</p>
+                                        <p><strong>Priority:</strong> <span class="priority-label">${safePriority.toUpperCase()}</span></p>
+                                        <p><strong>From:</strong> ${safeName}</p>
+                                        <p><strong>Email:</strong> ${safeEmail}</p>
+                                        <p><strong>Subject:</strong> ${safeSubject}</p>
                                     </div>
-                                    
                                     <h3>Message:</h3>
-                                    <p style="background-color: #fff; padding: 15px; border-radius: 5px; white-space: pre-wrap;">${message}</p>
-                                    
+                                    <p style="background-color: #fff; padding: 15px; border-radius: 5px; white-space: pre-wrap;">${safeMessage}</p>
                                     <a href="${APP_URL}/#/admin/support" class="button">View in Support Manager</a>
-                                    
                                     <p style="margin-top: 30px; font-size: 12px; color: #666;">
                                         This ticket was submitted on ${new Date().toLocaleString()}
                                     </p>
@@ -109,11 +122,8 @@ Deno.serve(async (req) => {
             }),
         })
 
-        const adminResult = await adminEmailResponse.json()
-        console.log('Admin email result:', adminResult)
-
         // Send confirmation email to user
-        const userEmailResponse = await fetch('https://api.resend.com/emails', {
+        await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -122,7 +132,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
                 from: 'TFC Media Support <noreply@tfcmediagroup.com>',
                 to: [email],
-                subject: `Support Ticket Received - #${ticketNumber}`,
+                subject: `Support Ticket Received - #${safeTicketNumber}`,
                 html: `
                     <!DOCTYPE html>
                     <html>
@@ -141,38 +151,31 @@ Deno.serve(async (req) => {
                         <body>
                             <div class="container">
                                 <div class="header">
-                                    <h1>✅ Ticket Received</h1>
+                                    <h1>Ticket Received</h1>
                                 </div>
                                 <div class="content">
-                                    <p>Dear ${name},</p>
-                                    
+                                    <p>Dear ${safeName},</p>
                                     <p>Thank you for contacting TFC Media support. We've received your support request and will respond as soon as possible.</p>
-                                    
                                     <div class="ticket-box">
                                         <p style="margin: 0; font-size: 14px; color: #666;">Your Ticket Number</p>
-                                        <p class="ticket-number">#${ticketNumber}</p>
+                                        <p class="ticket-number">#${safeTicketNumber}</p>
                                     </div>
-                                    
                                     <h3>Ticket Details:</h3>
-                                    <p><strong>Subject:</strong> ${subject}</p>
-                                    <p><strong>Priority:</strong> ${priority.charAt(0).toUpperCase() + priority.slice(1)}</p>
-                                    
+                                    <p><strong>Subject:</strong> ${safeSubject}</p>
+                                    <p><strong>Priority:</strong> ${safePriority.charAt(0).toUpperCase() + safePriority.slice(1)}</p>
                                     <div class="info-box">
-                                        <p><strong>📧 What happens next?</strong></p>
+                                        <p><strong>What happens next?</strong></p>
                                         <ul style="margin: 10px 0; padding-left: 20px;">
                                             <li>Our support team will review your ticket</li>
                                             <li>We typically respond within 24 hours</li>
                                             <li>You'll receive an email when we respond</li>
                                         </ul>
                                     </div>
-                                    
-                                    <p style="margin-top: 30px;">If you have any additional information to add, please reply to this email with your ticket number.</p>
-                                    
-                                    <p>Best regards,<br>TFC Media Support Team</p>
+                                    <p style="margin-top: 30px;">Best regards,<br>TFC Media Support Team</p>
                                 </div>
                                 <div class="footer">
                                     <p>This is an automated message. Please do not reply directly to this email.</p>
-                                    <p>TFC Media Group © ${new Date().getFullYear()}</p>
+                                    <p>TFC Media Group &copy; ${new Date().getFullYear()}</p>
                                 </div>
                             </div>
                         </body>
@@ -181,30 +184,16 @@ Deno.serve(async (req) => {
             }),
         })
 
-        const userResult = await userEmailResponse.json()
-        console.log('User email result:', userResult)
-
         return new Response(
-            JSON.stringify({
-                success: true,
-                message: 'Support emails sent successfully',
-                adminEmail: adminResult,
-                userEmail: userResult
-            }),
-            {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            }
+            JSON.stringify({ success: true, message: 'Support emails sent successfully' }),
+            { status: 200, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
         )
 
     } catch (error) {
         console.error('Error sending support emails:', error)
         return new Response(
-            JSON.stringify({ error: error.message || 'Failed to send support emails' }),
-            {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            }
+            JSON.stringify({ error: 'Failed to send support emails' }),
+            { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
         )
     }
 })

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { formatPhoneNumber } from '../../utils/phoneFormatter';
 import { formatZipCode, US_STATES } from '../../utils/formValidation';
-import { Search, Plus, X, Mail, Phone, Building, DollarSign, ShoppingBag, Calendar, Edit, Trash2, Loader2, UserPlus, Shield, User, Key } from 'lucide-react';
+import { Search, Plus, X, Mail, Phone, Building, DollarSign, ShoppingBag, Calendar, Edit, Archive, RotateCcw, Loader2, UserPlus, Shield, User, Key, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import { createUser } from '../../utils/userManagement';
@@ -20,6 +20,8 @@ interface Client {
     status: string;
     city: string;
     state: string;
+    archived_at?: string;
+    archived_by?: string;
 }
 
 const Clients: React.FC = () => {
@@ -32,6 +34,9 @@ const Clients: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [isResettingPassword, setIsResettingPassword] = useState(false);
+    const [showArchived, setShowArchived] = useState(false);
+    const [archiveTarget, setArchiveTarget] = useState<Client | null>(null);
+    const [archiveLoading, setArchiveLoading] = useState(false);
     const [formData, setFormData] = useState<Partial<Client>>({});
     const [createdPassword, setCreatedPassword] = useState<string | null>(null);
     const [resetPassword, setResetPassword] = useState<string | null>(null);
@@ -63,18 +68,26 @@ const Clients: React.FC = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, []);
+    }, [showArchived]);
 
     const fetchClients = async () => {
         try {
             setLoading(true);
 
-            // Fetch clients
-            const { data: profilesData, error: profilesError } = await supabase
+            // Fetch clients - filter by archived status
+            let query = supabase
                 .from('profiles')
                 .select('*')
                 .eq('role', 'client')
                 .order('member_since', { ascending: false });
+
+            if (showArchived) {
+                query = query.not('archived_at', 'is', null);
+            } else {
+                query = query.is('archived_at', null);
+            }
+
+            const { data: profilesData, error: profilesError } = await query;
 
             if (profilesError) throw profilesError;
 
@@ -142,33 +155,53 @@ const Clients: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        // Use setTimeout to ensure Chrome doesn't block the confirm dialog
-        setTimeout(async () => {
-            if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+    const handleArchive = async () => {
+        if (!archiveTarget) return;
 
-            try {
-                setLoading(true);
-                // Call the Edge Function to delete the user securely
-                const { data, error } = await supabase.functions.invoke('delete-user', {
-                    body: { userId: id }
-                });
+        try {
+            setArchiveLoading(true);
+            const { data, error } = await supabase.functions.invoke('archive-user', {
+                body: { userId: archiveTarget.id }
+            });
 
-                if (error) throw error;
-
-                if (!data.success) {
-                    throw new Error(data.error || 'Failed to delete user');
-                }
-
-                await fetchClients();
-                alert('User deleted successfully from both Auth and profiles');
-            } catch (err: any) {
-                console.error('Error deleting user:', err);
-                alert(`Failed to delete user: ${err.message || 'Unknown error'}`);
-            } finally {
-                setLoading(false);
+            if (error) throw error;
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to archive user');
             }
-        }, 0);
+
+            await fetchClients();
+            setArchiveTarget(null);
+            alert(`Client "${archiveTarget.name}" has been archived. Their financial records have been preserved.`);
+        } catch (err: any) {
+            console.error('Error archiving user:', err);
+            alert(`Failed to archive user: ${err.message || 'Unknown error'}`);
+        } finally {
+            setArchiveLoading(false);
+        }
+    };
+
+    const handleRestore = async (client: Client) => {
+        if (!window.confirm(`Restore "${client.name}"? This will re-enable their account and allow them to log in again.`)) return;
+
+        try {
+            setLoading(true);
+            const { data, error } = await supabase.functions.invoke('restore-user', {
+                body: { userId: client.id }
+            });
+
+            if (error) throw error;
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to restore user');
+            }
+
+            await fetchClients();
+            alert(`Client "${client.name}" has been restored and can log in again.`);
+        } catch (err: any) {
+            console.error('Error restoring user:', err);
+            alert(`Failed to restore user: ${err.message || 'Unknown error'}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleAddUser = async () => {
@@ -344,6 +377,17 @@ const Clients: React.FC = () => {
                     <option value="inactive">Inactive</option>
                     <option value="onboarding">Onboarding</option>
                 </select>
+                <button
+                    onClick={() => setShowArchived(!showArchived)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-colors border ${
+                        showArchived
+                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+                            : 'bg-white dark:bg-charcoal border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-amber-500/30'
+                    }`}
+                >
+                    <Archive className="w-4 h-4" />
+                    {showArchived ? 'Viewing Archived' : 'Show Archived'}
+                </button>
             </div>
 
             {/* Clients Table */}
@@ -420,7 +464,9 @@ const Clients: React.FC = () => {
                                             <span className="font-bold text-electric">${(client.total_spent || 0).toFixed(2)}</span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${client.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' :
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                                client.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' :
+                                                client.status === 'archived' ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400' :
                                                 client.status === 'inactive' ? 'bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-400' :
                                                     'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400'
                                                 }`}>
@@ -444,13 +490,23 @@ const Clients: React.FC = () => {
                                                     <Key className="w-4 h-4" />
                                                 </button>
                                                 {client.email !== FIRST_ADMIN_EMAIL && (
-                                                    <button
-                                                        onClick={() => handleDelete(client.id)}
-                                                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                                        title="Delete Client"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                    showArchived ? (
+                                                        <button
+                                                            onClick={() => handleRestore(client)}
+                                                            className="p-2 text-gray-600 dark:text-gray-400 hover:text-green-500 hover:bg-green-500/10 rounded-lg transition-colors"
+                                                            title="Restore Client"
+                                                        >
+                                                            <RotateCcw className="w-4 h-4" />
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => setArchiveTarget(client)}
+                                                            className="p-2 text-gray-600 dark:text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 rounded-lg transition-colors"
+                                                            title="Archive Client"
+                                                        >
+                                                            <Archive className="w-4 h-4" />
+                                                        </button>
+                                                    )
                                                 )}
                                             </div>
                                         </td>
@@ -917,6 +973,99 @@ const Clients: React.FC = () => {
                                     className="px-6 py-2 bg-electric hover:bg-electric/90 text-white rounded-lg font-bold transition-colors"
                                 >
                                     Done
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Archive Confirmation Modal */}
+            <AnimatePresence>
+                {archiveTarget && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white dark:bg-charcoal w-full max-w-lg rounded-xl shadow-2xl"
+                        >
+                            <div className="p-6 border-b border-gray-200 dark:border-white/10 flex items-center justify-between">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Archive Client</h3>
+                                <button
+                                    onClick={() => setArchiveTarget(null)}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-4">
+                                <div className="flex items-start gap-4">
+                                    <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <AlertTriangle className="w-6 h-6 text-amber-500" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-gray-900 dark:text-white text-lg">
+                                            Archive "{archiveTarget.name}"?
+                                        </p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                            {archiveTarget.email}
+                                            {archiveTarget.company ? ` — ${archiveTarget.company}` : ''}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-lg p-4 space-y-2">
+                                    <p className="font-bold text-blue-900 dark:text-blue-200 text-sm">What will happen:</p>
+                                    <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
+                                        <li>Client will no longer be able to log in</li>
+                                        <li>Client will be hidden from the default client list</li>
+                                        <li>Cart items and favorites will be removed</li>
+                                    </ul>
+                                </div>
+
+                                <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-lg p-4 space-y-2">
+                                    <p className="font-bold text-green-900 dark:text-green-200 text-sm">What will be preserved:</p>
+                                    <ul className="text-sm text-green-800 dark:text-green-300 space-y-1 list-disc list-inside">
+                                        <li>All orders and payment history ({archiveTarget.total_spent ? `$${archiveTarget.total_spent.toFixed(2)}` : '$0.00'} total)</li>
+                                        <li>All invoices and invoice payments</li>
+                                        <li>Support ticket history</li>
+                                        <li>Project records and deliverables</li>
+                                    </ul>
+                                </div>
+
+                                <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg p-3">
+                                    <p className="text-sm text-amber-800 dark:text-amber-300">
+                                        <strong>This is reversible.</strong> You can restore the client at any time from the "Show Archived" view.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="p-6 border-t border-gray-200 dark:border-white/10 flex justify-end gap-3">
+                                <button
+                                    onClick={() => setArchiveTarget(null)}
+                                    disabled={archiveLoading}
+                                    className="px-6 py-2 border border-gray-200 dark:border-white/10 rounded-lg font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleArchive}
+                                    disabled={archiveLoading}
+                                    className="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {archiveLoading ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Archiving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Archive className="w-4 h-4" />
+                                            Archive Client
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </motion.div>

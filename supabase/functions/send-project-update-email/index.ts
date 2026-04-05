@@ -2,9 +2,18 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function getCorsHeaders(req: Request) {
+    const origin = req.headers.get('Origin') || ''
+    const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map((o: string) => o.trim())
+    const isAllowed = allowedOrigins.includes(origin)
+    return {
+        'Access-Control-Allow-Origin': isAllowed ? origin : (allowedOrigins[0] || ''),
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    }
+}
+
+function escapeHtml(str: string): string {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
 }
 
 interface ProjectUpdateEmailRequest {
@@ -26,11 +35,14 @@ const formatStatus = (status: string) => {
 serve(async (req) => {
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
+        return new Response('ok', { headers: getCorsHeaders(req) })
     }
 
     try {
         const { clientName, clientEmail, projectName, updates, portalUrl }: ProjectUpdateEmailRequest = await req.json()
+
+        const safeName = escapeHtml(clientName || '')
+        const safeProject = escapeHtml(projectName || '')
 
         // Build update summary
         const updateItems: string[] = []
@@ -86,7 +98,7 @@ serve(async (req) => {
             body: JSON.stringify({
                 from: 'TFC Media <noreply@tfcmediagroup.com>',
                 to: [clientEmail],
-                subject: `Project Update: "${projectName}"`,
+                subject: `Project Update: "${safeProject}"`,
                 html: `
           <!DOCTYPE html>
           <html>
@@ -101,10 +113,10 @@ serve(async (req) => {
               </div>
               
               <div style="background: #ffffff; padding: 40px 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
-                <p style="font-size: 16px; margin-bottom: 20px;">Hi ${clientName},</p>
+                <p style="font-size: 16px; margin-bottom: 20px;">Hi ${safeName},</p>
                 
                 <p style="font-size: 16px; margin-bottom: 20px;">
-                  We have an update on your project <strong>"${projectName}"</strong>!
+                  We have an update on your project <strong>"${safeProject}"</strong>!
                 </p>
                 
                 <div style="background: #f0f9ff; border-left: 4px solid #00D9FF; padding: 20px; margin: 30px 0; border-radius: 4px;">
@@ -173,13 +185,13 @@ serve(async (req) => {
         }
 
         return new Response(JSON.stringify({ success: true, data }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
             status: 200,
         })
     } catch (error) {
         console.error('Error in send-project-update-email function:', error)
-        return new Response(JSON.stringify({ error: error.message }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        return new Response(JSON.stringify({ error: 'Failed to send project update email' }), {
+            headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
             status: 400,
         })
     }

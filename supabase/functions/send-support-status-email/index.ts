@@ -1,15 +1,36 @@
 // Edge Function to send support ticket status update emails to clients
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function getCorsHeaders(req: Request) {
+    const origin = req.headers.get('Origin') || ''
+    const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map((o: string) => o.trim())
+    const isAllowed = allowedOrigins.includes(origin)
+    return {
+        'Access-Control-Allow-Origin': isAllowed ? origin : (allowedOrigins[0] || ''),
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    }
+}
+
+function escapeHtml(str: string): string {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+}
+
+// Status colors are hardcoded — never from user input
+const STATUS_MAP: Record<string, { label: string; color: string; emoji: string }> = {
+    'new':         { label: 'New',         color: '#3B82F6', emoji: '' },
+    'in-progress': { label: 'In Progress', color: '#F59E0B', emoji: '' },
+    'resolved':    { label: 'Resolved',    color: '#10B981', emoji: '' },
+    'closed':      { label: 'Closed',      color: '#6B7280', emoji: '' },
 }
 
 Deno.serve(async (req) => {
-    // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
+        return new Response('ok', { headers: getCorsHeaders(req) })
     }
 
     try {
@@ -20,27 +41,15 @@ Deno.serve(async (req) => {
             throw new Error('RESEND_API_KEY not configured')
         }
 
-        const APP_URL = Deno.env.get('APP_URL') || 'http://localhost:3001'
+        // HTML-escape all user-supplied fields
+        const safeName = escapeHtml(name || '')
+        const safeSubject = escapeHtml(subject || '')
+        const safeTicketNumber = escapeHtml(String(ticketNumber || ''))
+        const safeAdminResponse = adminResponse ? escapeHtml(adminResponse) : ''
 
-        // Get status display info
-        const getStatusInfo = (status: string) => {
-            switch (status) {
-                case 'new':
-                    return { label: 'New', color: '#3B82F6', emoji: '🆕' }
-                case 'in-progress':
-                    return { label: 'In Progress', color: '#F59E0B', emoji: '⏳' }
-                case 'resolved':
-                    return { label: 'Resolved', color: '#10B981', emoji: '✅' }
-                case 'closed':
-                    return { label: 'Closed', color: '#6B7280', emoji: '🔒' }
-                default:
-                    return { label: status, color: '#6B7280', emoji: '📋' }
-            }
-        }
+        // Status info uses hardcoded map — color never comes from user input
+        const statusInfo = STATUS_MAP[status] || { label: escapeHtml(String(status)), color: '#6B7280', emoji: '' }
 
-        const statusInfo = getStatusInfo(status)
-
-        // Send status update email to client
         const emailResponse = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
@@ -50,7 +59,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
                 from: 'TFC Media Support <noreply@tfcmediagroup.com>',
                 to: [email],
-                subject: `Support Ticket Update - #${ticketNumber}`,
+                subject: `Support Ticket Update - #${safeTicketNumber}`,
                 html: `
                     <!DOCTYPE html>
                     <html>
@@ -69,29 +78,25 @@ Deno.serve(async (req) => {
                         <body>
                             <div class="container">
                                 <div class="header">
-                                    <h1>${statusInfo.emoji} Ticket Status Update</h1>
+                                    <h1>Ticket Status Update</h1>
                                 </div>
                                 <div class="content">
-                                    <p>Dear ${name},</p>
-                                    
+                                    <p>Dear ${safeName},</p>
                                     <p>Your support ticket has been updated:</p>
-                                    
                                     <div class="ticket-box">
-                                        <p><strong>Ticket Number:</strong> #${ticketNumber}</p>
-                                        <p><strong>Subject:</strong> ${subject}</p>
+                                        <p><strong>Ticket Number:</strong> #${safeTicketNumber}</p>
+                                        <p><strong>Subject:</strong> ${safeSubject}</p>
                                         <p><strong>New Status:</strong> <span class="status-badge">${statusInfo.label}</span></p>
                                     </div>
-                                    
-                                    ${adminResponse ? `
+                                    ${safeAdminResponse ? `
                                         <h3>Response from Support Team:</h3>
                                         <div class="response-box">
-                                            <p style="white-space: pre-wrap; margin: 0;">${adminResponse}</p>
+                                            <p style="white-space: pre-wrap; margin: 0;">${safeAdminResponse}</p>
                                         </div>
                                     ` : ''}
-                                    
                                     ${status === 'resolved' ? `
                                         <p style="margin-top: 30px;">
-                                            <strong>✅ Your issue has been resolved!</strong><br>
+                                            <strong>Your issue has been resolved!</strong><br>
                                             If you have any further questions or if the issue persists, please don't hesitate to create a new support ticket.
                                         </p>
                                     ` : status === 'in-progress' ? `
@@ -99,7 +104,6 @@ Deno.serve(async (req) => {
                                             Our support team is actively working on your request. We'll keep you updated on the progress.
                                         </p>
                                     ` : ''}
-                                    
                                     <p style="margin-top: 30px;">
                                         Best regards,<br>
                                         TFC Media Support Team
@@ -107,7 +111,7 @@ Deno.serve(async (req) => {
                                 </div>
                                 <div class="footer">
                                     <p>This is an automated notification. Please do not reply directly to this email.</p>
-                                    <p>TFC Media Group © ${new Date().getFullYear()}</p>
+                                    <p>TFC Media Group &copy; ${new Date().getFullYear()}</p>
                                 </div>
                             </div>
                         </body>
@@ -117,28 +121,17 @@ Deno.serve(async (req) => {
         })
 
         const result = await emailResponse.json()
-        console.log('Status update email result:', result)
 
         return new Response(
-            JSON.stringify({
-                success: true,
-                message: 'Status update email sent successfully',
-                result
-            }),
-            {
-                status: 200,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            }
+            JSON.stringify({ success: true, message: 'Status update email sent successfully', result }),
+            { status: 200, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
         )
 
     } catch (error) {
         console.error('Error sending status update email:', error)
         return new Response(
-            JSON.stringify({ error: error.message || 'Failed to send status update email' }),
-            {
-                status: 500,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            }
+            JSON.stringify({ error: 'Failed to send status update email' }),
+            { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
         )
     }
 })

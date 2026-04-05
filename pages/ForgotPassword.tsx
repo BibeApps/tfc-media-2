@@ -61,17 +61,7 @@ const ForgotPassword: React.FC = () => {
                  We've sent a password reset link to <span className="font-bold">{email}</span>.
               </p>
               
-              <div className="pt-4 border-t border-green-200 dark:border-green-900/30">
-                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Demo Mode: Since we can't send real emails:</p>
-                 <Link 
-                    to={`/reset-password?email=${encodeURIComponent(email)}`}
-                    className="inline-block px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition-colors"
-                 >
-                    Simulate Clicking Email Link
-                 </Link>
-              </div>
-
-              <button 
+              <button
                 onClick={() => setStatus('idle')}
                 className="text-sm text-green-600 dark:text-green-400 font-bold hover:underline mt-4 block mx-auto"
               >

@@ -137,7 +137,7 @@ serve(async (req) => {
         return new Response(
             JSON.stringify({
                 success: false,
-                error: error.message || 'Unknown error occurred'
+                error: 'An unexpected error occurred'
             }),
             {
                 headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },

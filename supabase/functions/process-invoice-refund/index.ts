@@ -269,11 +269,11 @@ serve(async (req) => {
         return new Response(
             JSON.stringify({
                 success: false,
-                error: error.message
+                error: 'Failed to process refund'
             }),
             {
                 headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
-                status: 400,
+                status: 500,
             }
         )
     }

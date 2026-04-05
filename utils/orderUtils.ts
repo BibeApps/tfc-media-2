@@ -48,12 +48,11 @@ export const createCheckoutSession = async (items: any[], clientId?: string) => 
         if (orderError) throw orderError;
 
         // Call Edge Function to create Stripe session
+        // Items and prices are fetched server-side from DB — not sent from client
         const { data, error } = await supabase.functions.invoke('create-checkout-session', {
             body: {
                 orderId: order.id,
                 orderNumber: orderNumber,
-                items: items,
-                totalAmount: total,
                 successUrl: `${window.location.origin}/#/portal/purchases?success=true&order=${orderNumber}`,
                 cancelUrl: `${window.location.origin}/#/gallery`,
             },

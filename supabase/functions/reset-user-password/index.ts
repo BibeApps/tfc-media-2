@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
                                                 <li>You'll be prompted to create a new password</li>
                                             </ol>
                                             
-                                            <a href="${Deno.env.get('APP_URL') || 'http://localhost:3001'}/#/login" class="button">Go to Login</a>
+                                            <a href="${Deno.env.get('APP_URL') || 'https://tfcmediagroup.com'}/#/login" class="button">Go to Login</a>
                                             
                                             <p style="margin-top: 30px;">If you have any questions, please contact your administrator.</p>
                                             
@@ -256,7 +256,6 @@ Deno.serve(async (req) => {
         return new Response(
             JSON.stringify({
                 success: true,
-                tempPassword: tempPassword,
                 message: 'Password reset successfully. Email sent to user.'
             }),
             {
@@ -268,7 +267,7 @@ Deno.serve(async (req) => {
     } catch (error) {
         console.error('Unexpected error:', error)
         return new Response(
-            JSON.stringify({ error: error.message || 'An unexpected error occurred' }),
+            JSON.stringify({ error: 'An unexpected error occurred' }),
             {
                 status: 500,
                 headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }

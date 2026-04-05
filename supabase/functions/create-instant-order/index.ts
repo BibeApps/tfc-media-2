@@ -1,27 +1,56 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+function getCorsHeaders(req: Request) {
+    const origin = req.headers.get('Origin') || '';
+    const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').map((o: string) => o.trim());
+    const isAllowed = allowedOrigins.includes(origin);
+    return {
+        'Access-Control-Allow-Origin': isAllowed ? origin : (allowedOrigins[0] || ''),
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    };
+}
 
 serve(async (req) => {
-    // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders });
+        return new Response('ok', { headers: getCorsHeaders(req) });
     }
 
     try {
-        const { gallery_item_ids, user_id } = await req.json();
+        // Verify authentication — derive user_id from JWT, never trust client body
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) {
+            return new Response(
+                JSON.stringify({ success: false, error: 'Unauthorized' }),
+                { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 401 }
+            );
+        }
+
+        const anonClient = createClient(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_ANON_KEY')!,
+            { global: { headers: { Authorization: authHeader } } }
+        );
+
+        const { data: { user }, error: authError } = await anonClient.auth.getUser();
+        if (authError || !user) {
+            return new Response(
+                JSON.stringify({ success: false, error: 'Unauthorized' }),
+                { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 401 }
+            );
+        }
+
+        const { gallery_item_ids } = await req.json();
 
         if (!gallery_item_ids || !Array.isArray(gallery_item_ids) || gallery_item_ids.length === 0) {
-            throw new Error('gallery_item_ids must be a non-empty array');
+            return new Response(
+                JSON.stringify({ success: false, error: 'gallery_item_ids must be a non-empty array' }),
+                { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 400 }
+            );
         }
 
-        if (!user_id) {
-            throw new Error('user_id is required');
-        }
+        // Use authenticated user's ID — never from client body
+        const user_id = user.id;
 
         const supabase = createClient(
             Deno.env.get('SUPABASE_URL')!,
@@ -86,22 +115,13 @@ serve(async (req) => {
                     item_count: gallery_item_ids.length,
                 }
             }),
-            {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 200,
-            }
+            { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 200 }
         );
     } catch (error) {
         console.error('Function error:', error);
         return new Response(
-            JSON.stringify({
-                success: false,
-                error: error.message
-            }),
-            {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 400,
-            }
+            JSON.stringify({ success: false, error: 'Failed to create order' }),
+            { headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' }, status: 500 }
         );
     }
 });

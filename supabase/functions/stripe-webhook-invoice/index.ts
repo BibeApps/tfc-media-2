@@ -9,8 +9,9 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import Stripe from 'https://esm.sh/stripe@14.5.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// Stripe webhooks are server-to-server; CORS for browser preflight only
 const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGINS')?.split(',')[0]?.trim() || '',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
 }
 
@@ -129,7 +130,7 @@ serve(async (req) => {
                             itemCount,
                             totalAmount: orderData.total_amount,
                             orderDate: new Date(orderData.created_at).toLocaleDateString(),
-                            portalUrl: `${Deno.env.get('APP_URL') || 'http://localhost:3000'}/#/portal/downloads`
+                            portalUrl: `${Deno.env.get('APP_URL') || 'https://tfcmediagroup.com'}/#/portal/downloads`
                         });
 
                         const emailResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
@@ -361,7 +362,7 @@ serve(async (req) => {
 
                 // Send project created email
                 try {
-                    const portalUrl = `${Deno.env.get('APP_URL') || 'http://localhost:3000'}/#/portal`
+                    const portalUrl = `${Deno.env.get('APP_URL') || 'https://tfcmediagroup.com'}/#/portal`
                     await supabaseAdmin.functions.invoke('send-project-email', {
                         body: {
                             clientName: invoice.client_name,
@@ -513,7 +514,7 @@ serve(async (req) => {
         return new Response(
             JSON.stringify({
                 success: false,
-                error: error.message
+                error: 'Webhook processing failed'
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
