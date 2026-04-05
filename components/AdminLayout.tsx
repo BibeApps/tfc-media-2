@@ -75,16 +75,15 @@ const AdminLayout: React.FC = () => {
 
     const navItems = [
         { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+        { path: '/admin/clients', icon: Users, label: 'Clients' },
+        { path: '/admin/bookings', icon: Calendar, label: 'Bookings' },
+        { path: '/admin/projects', icon: Briefcase, label: 'Projects' },
+        { path: '/admin/invoices', icon: FileText, label: 'Invoices' },
         { path: '/admin/gallery', icon: FolderOpen, label: 'Gallery Manager' },
         { path: '/admin/gallery-edit', icon: Edit2, label: 'Gallery Editor' },
-
-        { path: '/admin/bookings', icon: Calendar, label: 'Bookings' },
         { path: '/admin/orders', icon: ShoppingBag, label: 'Orders' },
-        { path: '/admin/invoices', icon: FileText, label: 'Invoices' },
         { path: '/admin/blackout-dates', icon: Ban, label: 'Blackout Dates' },
         { path: '/admin/service-types', icon: Briefcase, label: 'Service Types' },
-        { path: '/admin/clients', icon: Users, label: 'Clients' },
-        { path: '/admin/projects', icon: Briefcase, label: 'Projects' },
         { path: '/admin/portfolio', icon: Image, label: 'Portfolio' },
         { path: '/admin/team', icon: UserCircle, label: 'Team' },
         {
