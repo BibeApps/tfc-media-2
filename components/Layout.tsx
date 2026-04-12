@@ -628,7 +628,7 @@ const Footer: React.FC = () => {
           </div>
 
           {/* ── Ember Credit ── */}
-          <div className="border-t border-white/5 mt-6 pt-4 text-center text-[11px] text-gray-600">
+          <div className="border-t border-white/5 mt-6 pt-4 text-center text-xs text-gray-600">
             Built with intention | By{' '}
             <a
               href="https://www.emberdevstudios.com"
