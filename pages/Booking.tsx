@@ -6,6 +6,8 @@ import { useBooking } from '../context/BookingContext';
 import { supabase } from '../supabaseClient';
 import { motion } from 'framer-motion';
 import AvailabilityCalendar from '../components/AvailabilityCalendar';
+import Turnstile from '../components/Turnstile';
+import { honeypotStyle } from '../lib/spam-guard';
 import { generateTimeSlots, calculateDuration } from '../utils/timeUtils';
 import { formatPhoneNumber } from '../utils/phoneFormatter';
 import { formatDate } from '../utils/dateFormatter';
@@ -49,6 +51,11 @@ const Booking: React.FC = () => {
   });
 
   const [dateError, setDateError] = useState('');
+
+  // Spam-guard state — see lib/spam-guard.ts and api/verify-submission.ts
+  const [website, setWebsite] = useState('');
+  const [formRenderedAt] = useState(() => Date.now());
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -142,6 +149,36 @@ const Booking: React.FC = () => {
     if (!formData.isFullDay && (!formData.time || !formData.endTime)) {
       alert('Please select both start and end time for your booking.');
       return;
+    }
+
+    // Server-side spam + Turnstile verification BEFORE the Supabase insert.
+    // Silent-fail: if blocked, advance to the success step without booking
+    // anything so bots think they succeeded and stop retrying.
+    try {
+      const verifyRes = await fetch('/api/verify-submission', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          notes: formData.notes,
+          website,
+          formRenderedAt,
+          turnstileToken,
+        }),
+      });
+      const verifyData = await verifyRes.json().catch(() => ({ ok: false }));
+      if (!verifyData?.ok) {
+        console.warn('[booking] spam-guard blocked:', verifyData?.reason);
+        setStep(3); // Pretend success — bot never knows
+        return;
+      }
+    } catch (err) {
+      // If the verification endpoint is unreachable (e.g. local dev without
+      // Vercel running), fall through to the booking insert. Production
+      // always has the endpoint.
+      console.warn('[booking] verify-submission unreachable, proceeding:', err);
     }
 
     const bookingData = {
@@ -489,6 +526,23 @@ const Booking: React.FC = () => {
                   className="w-full bg-gray-50 dark:bg-obsidian border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-electric outline-none"
                 />
               </div>
+
+              {/* Honeypot — invisible to humans, bots fill all fields */}
+              <div aria-hidden="true" style={honeypotStyle}>
+                <label htmlFor="booking-website">Website</label>
+                <input
+                  id="booking-website"
+                  name="website"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+              </div>
+
+              {/* Cloudflare Turnstile — invisible CAPTCHA */}
+              <Turnstile onVerify={setTurnstileToken} theme="dark" />
 
               <div className="flex gap-4">
                 <button type="button" onClick={() => setStep(1)} className="w-1/3 bg-transparent border border-gray-300 dark:border-white/20 text-gray-700 dark:text-white font-bold py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5">
