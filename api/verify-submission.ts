@@ -5,20 +5,25 @@
    human, { ok: false } when blocked.
 
    The client calls this BEFORE running the Supabase insert, and
-   silent-fails (pretends the booking succeeded) when ok === false.
+   silent-fails (pretends the booking succeeded) ONLY on an explicit
+   { ok: false } verdict — any other outcome fails open client-side.
 
    Why a Vercel serverless function for a Vite SPA?
    The booking insert happens directly from the browser via the
    Supabase anon key. Without a server hop, there's no place to
    validate Turnstile tokens (which require TURNSTILE_SECRET_KEY)
    or run server-side spam heuristics. This function is the seam.
+
+   ⚠️ This file must stay SELF-CONTAINED (no relative imports).
+   Vercel's zero-config api/ builder shipped the compiled
+   `import "../lib/spam-guard"` unresolved (ERR_MODULE_NOT_FOUND at
+   runtime under "type": "module"), which 500'd every call from
+   2026-05-27 to 2026-09-03 — and the client's old handling mapped
+   the crash to a silent block, eating every real booking. The spam
+   heuristics below are inlined from lib/spam-guard.ts; keep the two
+   in sync if the rules change.
    ===================================================== */
 
-import { checkSpam } from "../lib/spam-guard";
-
-// Vercel function — works with both `req: Request` (Edge/Web) and the
-// older Node IncomingMessage shape. We use the Web API shape because
-// it's cleaner and works in either runtime.
 export const config = {
   runtime: "nodejs",
 };
@@ -28,13 +33,82 @@ interface VerifyResponse {
   reason?: string;
 }
 
+/* ---------- spam heuristics (inlined from lib/spam-guard.ts) ---------- */
+
+type SpamReason =
+  | "honeypot"
+  | "too-fast"
+  | "content-pattern"
+  | "disposable-email";
+
+const SPAM_CONTENT_PATTERNS: RegExp[] = [
+  /(https?:\/\/[^\s]+[\s\S]*?){2,}/i,
+  /\b(guest\s*post|link\s*building|backlinks?|seo\s*services?|rank\s*(?:higher|on\s*google))\b/i,
+  /\b(crypto(?:currency)?|bitcoin|forex|nft\s*drop|payday\s*loan|quick\s*loan)\b.*\b(services?|deal|offer|opportunity)\b/i,
+  /\b(viagra|cialis|cbd\s*oil|casino|escort|porn(?:hub)?)\b/i,
+  /[Ѐ-ӿͰ-Ͽ؀-ۿ]{3,}/,
+];
+
+const DISPOSABLE_EMAIL_DOMAINS = new Set<string>([
+  "10minutemail.com", "10minutemail.net", "20minutemail.com",
+  "guerrillamail.com", "guerrillamail.net", "guerrillamail.org", "guerrillamail.biz",
+  "mailinator.com", "mailinator.net",
+  "tempmail.com", "temp-mail.org",
+  "throwaway.email", "trashmail.com", "trashmail.net",
+  "yopmail.com", "fakeinbox.com", "sharklasers.com", "spam4.me",
+  "dispostable.com", "maildrop.cc", "mintemail.com", "getnada.com", "burnermail.io",
+]);
+
+function checkSpam(body: Record<string, unknown>): { blocked: boolean; reason?: SpamReason } {
+  const honeypotValue = body["website"];
+  if (typeof honeypotValue === "string" && honeypotValue.trim() !== "") {
+    return { blocked: true, reason: "honeypot" };
+  }
+
+  const renderedAt = body["formRenderedAt"];
+  if (typeof renderedAt === "number" && Number.isFinite(renderedAt)) {
+    const elapsed = Date.now() - renderedAt;
+    if (elapsed < 0 || elapsed < 2000) {
+      return { blocked: true, reason: "too-fast" };
+    }
+  }
+
+  const allText = Object.values(body)
+    .filter((v): v is string => typeof v === "string")
+    .join(" \n ");
+
+  for (const pattern of SPAM_CONTENT_PATTERNS) {
+    if (pattern.test(allText)) {
+      return { blocked: true, reason: "content-pattern" };
+    }
+  }
+
+  const email = (body.email || body.clientEmail) as unknown;
+  if (typeof email === "string") {
+    const domain = email.split("@")[1]?.toLowerCase().trim();
+    if (domain && DISPOSABLE_EMAIL_DOMAINS.has(domain)) {
+      return { blocked: true, reason: "disposable-email" };
+    }
+  }
+
+  return { blocked: false };
+}
+
+/* ---------- Cloudflare Turnstile ---------- */
+
 async function verifyTurnstileToken(
   token: unknown,
   remoteIp?: string,
 ): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) {
-    // No secret configured → skip Turnstile verification (graceful).
+  // Enforce ONLY when explicitly armed. TURNSTILE_SECRET_KEY has been set in
+  // Vercel since 2026-05-27, but the paired site key never reached the client
+  // (it was stored as NEXT_PUBLIC_* — the Next.js prefix — in this Vite app,
+  // so no widget ever rendered and no token was ever minted). Enforcing with
+  // no client widget blocks 100% of real bookings. To arm Turnstile: set
+  // VITE_TURNSTILE_SITE_KEY (client) AND TURNSTILE_ENFORCE=on (this check),
+  // in the same deploy. The CSP and widget wiring are already in place.
+  if (!secret || process.env.TURNSTILE_ENFORCE !== "on") {
     return true;
   }
   if (typeof token !== "string" || token.length === 0) return false;

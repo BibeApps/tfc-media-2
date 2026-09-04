@@ -38,6 +38,13 @@ declare global {
 const SCRIPT_SRC =
   "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
+// True when the client build carries a site key, i.e. the widget will render
+// and the server (which has TURNSTILE_SECRET_KEY) will demand a token.
+// Callers use this to hold their submit button until a token is minted —
+// tokens arrive asynchronously and expire, so submitting with an empty token
+// gets silently blocked server-side.
+export const isTurnstileEnabled = Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY);
+
 interface TurnstileProps {
   onVerify: (token: string) => void;
   theme?: "light" | "dark" | "auto";

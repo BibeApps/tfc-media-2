@@ -6,7 +6,7 @@ import { useBooking } from '../context/BookingContext';
 import { supabase } from '../supabaseClient';
 import { motion } from 'framer-motion';
 import AvailabilityCalendar from '../components/AvailabilityCalendar';
-import Turnstile from '../components/Turnstile';
+import Turnstile, { isTurnstileEnabled } from '../components/Turnstile';
 import { honeypotStyle } from '../lib/spam-guard';
 import { generateTimeSlots, calculateDuration } from '../utils/timeUtils';
 import { formatPhoneNumber } from '../utils/phoneFormatter';
@@ -154,6 +154,13 @@ const Booking: React.FC = () => {
     // Server-side spam + Turnstile verification BEFORE the Supabase insert.
     // Silent-fail: if blocked, advance to the success step without booking
     // anything so bots think they succeeded and stop retrying.
+    //
+    // Decoy ONLY on an explicit HTTP-200 { ok: false } verdict. Any other
+    // outcome (endpoint crash, non-JSON body, network error) fails OPEN and
+    // proceeds with the booking: from 2026-05-27 to 2026-09-03 this endpoint
+    // 500'd on every call and the old `.catch(() => ({ ok: false }))` mapped
+    // the crash to a silent block — every real booking was eaten while the
+    // customer saw the success screen.
     try {
       const verifyRes = await fetch('/api/verify-submission', {
         method: 'POST',
@@ -168,11 +175,15 @@ const Booking: React.FC = () => {
           turnstileToken,
         }),
       });
-      const verifyData = await verifyRes.json().catch(() => ({ ok: false }));
-      if (!verifyData?.ok) {
-        console.warn('[booking] spam-guard blocked:', verifyData?.reason);
-        setStep(3); // Pretend success — bot never knows
-        return;
+      if (verifyRes.status === 200) {
+        const verifyData = await verifyRes.json().catch(() => null);
+        if (verifyData && verifyData.ok === false) {
+          console.warn('[booking] spam-guard blocked:', verifyData.reason);
+          setStep(3); // Pretend success — bot never knows
+          return;
+        }
+      } else {
+        console.warn('[booking] verify-submission returned', verifyRes.status, '— failing open');
       }
     } catch (err) {
       // If the verification endpoint is unreachable (e.g. local dev without
@@ -548,8 +559,8 @@ const Booking: React.FC = () => {
                 <button type="button" onClick={() => setStep(1)} className="w-1/3 bg-transparent border border-gray-300 dark:border-white/20 text-gray-700 dark:text-white font-bold py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5">
                   Back
                 </button>
-                <button type="submit" disabled={!formData.isFullDay && (!formData.time || !formData.endTime)} className="w-2/3 bg-electric hover:bg-electric/90 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-electric/20 disabled:opacity-50 disabled:cursor-not-allowed">
-                  Confirm Booking
+                <button type="submit" disabled={(!formData.isFullDay && (!formData.time || !formData.endTime)) || (isTurnstileEnabled && !turnstileToken)} className="w-2/3 bg-electric hover:bg-electric/90 text-white font-bold py-3 rounded-lg transition-colors shadow-lg shadow-electric/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isTurnstileEnabled && !turnstileToken ? 'Running security check…' : 'Confirm Booking'}
                 </button>
               </div>
             </form>
