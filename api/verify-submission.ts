@@ -131,11 +131,10 @@ async function verifyTurnstileToken(
   }
 }
 
-export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== "POST") {
-    return Response.json({ ok: false, reason: "method-not-allowed" }, { status: 405 });
-  }
-
+// Named HTTP-method export — this is what gives a Vercel Node function the
+// Web fetch-style signature. A DEFAULT export gets the (req, res) signature
+// and any returned Response is silently ignored (the request just hangs).
+export async function POST(req: Request): Promise<Response> {
   let body: Record<string, unknown> = {};
   try {
     body = (await req.json()) as Record<string, unknown>;
