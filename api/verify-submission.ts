@@ -42,7 +42,11 @@ type SpamReason =
   | "disposable-email";
 
 const SPAM_CONTENT_PATTERNS: RegExp[] = [
-  /(https?:\/\/[^\s]+[\s\S]*?){2,}/i,
+  /* Two URLs anywhere. Written so it runs in linear time: the old
+     /(https?:\/\/[^\s]+[\s\S]*?){2,}/i backtracks quadratically on one long
+     URL-like run ("http://" + 40k characters took 1.5 s, and the routes run
+     this before Turnstile). Same verdicts on every sample tried. */
+  /https?:\/\/\S[\s\S]*?https?:\/\/\S/i,
   /\b(guest\s*post|link\s*building|backlinks?|seo\s*services?|rank\s*(?:higher|on\s*google))\b/i,
   /\b(crypto(?:currency)?|bitcoin|forex|nft\s*drop|payday\s*loan|quick\s*loan)\b.*\b(services?|deal|offer|opportunity)\b/i,
   /\b(viagra|cialis|cbd\s*oil|casino|escort|porn(?:hub)?)\b/i,
@@ -73,9 +77,12 @@ function checkSpam(body: Record<string, unknown>): { blocked: boolean; reason?: 
     }
   }
 
+  /* Capped: the patterns run on unauthenticated input before any other check,
+     and the first 10,000 characters are plenty to recognise spam */
   const allText = Object.values(body)
     .filter((v): v is string => typeof v === "string")
-    .join(" \n ");
+    .join(" \n ")
+    .slice(0, 10_000);
 
   for (const pattern of SPAM_CONTENT_PATTERNS) {
     if (pattern.test(allText)) {
