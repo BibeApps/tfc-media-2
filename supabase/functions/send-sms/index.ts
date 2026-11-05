@@ -70,7 +70,7 @@ serve(async (req) => {
         }
 
         // Create Basic Auth header for Twilio API
-        const authHeader = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)
+        const twilioAuth = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)
 
         // Send SMS using Twilio API
         const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`
@@ -84,7 +84,7 @@ serve(async (req) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': `Basic ${authHeader}`,
+                'Authorization': `Basic ${twilioAuth}`,
             },
             body: formData.toString(),
         })
